@@ -1,4 +1,4 @@
-# 🕒 Schwäbische Wortuhr (Swabian Word Clock)
+# 🕒 Simple word clock
 
 This repository contains the complete hardware design (3D-printed enclosure), electronics schematics, and the PlatformIO-based firmware.
 
