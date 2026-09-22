@@ -18,4 +18,7 @@ void loop() {
   Serial.println("Sende Signal: LED AUS");
   rgbLedWrite(RGB_BUILTIN, 0, 0, 0); // Alle Farben aus
   delay(1000);
+
+
+  
 }
