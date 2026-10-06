@@ -1,17 +1,18 @@
-# PlatformIO internal build folders and library caches
-.pio/
-.pioenvs/
-.piolibdeps/
-.clang_complete
-.gcc-flags.json
+Zephyr build output
 
-# VS Code environment files 
-.vscode/.provider
-.vscode/chcpp.json
-.vscode/ipch/
-.vscode/browse.vc.db
-.vscode/c_cpp_properties.json
-.vscode/launch.json
-.vscode/settings.json
-.vscode/tasks.json
-*.code-workspace
+build/
+
+IDE files
+
+.vscode/
+.idea/
+
+Python cache
+
+pycache/
+*.py[cod]
+
+OS files
+
+.DS_Store
+Thumbs.db
