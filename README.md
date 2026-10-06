@@ -48,7 +48,7 @@ The guide covers the required tools for Windows, Linux, and macOS, including Pyt
 Clone the application repository
 
 ```bash
-git clone
+git clone https://github.com/AssFactory/SimpleWordClock.git
 ```
 
 ### 2. Create the Python virtual environment
