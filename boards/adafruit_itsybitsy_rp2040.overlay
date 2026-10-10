@@ -16,3 +16,9 @@
 		compatible = "zephyr,cdc-acm-uart";
 	};
 };
+
+/* WS2812 LED-Strip */
+&ws2812 {
+	gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+	chain-length = <1>;
+};
