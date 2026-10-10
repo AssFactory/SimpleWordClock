@@ -1,31 +1,29 @@
 # 🕒 Simple Word Clock (Swabian Edition)
 
-A custom, embedded German word clock featuring a **Swabian dialect matrix**, powered by [Zephyr RTOS](https://www.zephyrproject.org/).
+A modern, embedded German word clock built on **Zephyr RTOS**, featuring a **Swabian dialect front matrix** ("Viertel x", "Halb x", etc.).
 
-Designed around the **Adafruit ItsyBitsy RP2040**, this open-source project combines precise timekeeping, automatic brightness control, and addressable RGB LEDs into an elegant wall or desktop clock.
+Designed for high-precision timekeeping, automatic brightness adjustment, and addressable RGB LED control, making it an ideal DIY wall or desktop clock.
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
-* **Swabian Dialect Matrix:** Unique front layout displaying time in a Swabian-inspired word arrangement ("Viertel x", "Halb x", etc.).
-* **Integrated Level Shifter:** Built around the **Adafruit ItsyBitsy RP2040**, which features an onboard **74HCT125 level shifter**. This simplifies wiring significantly by driving the 5V logic signal for WS2812B LEDs directly.
-* **Hardware Flexible (Zephyr RTOS):** Thanks to Zephyr's Devicetree abstraction, the firmware is highly portable and can easily be ported to other microcontrollers (e.g., **ESP32, STM32, NXP**).
-* **Automated Brightness:** Uses a **BH1750** ambient light sensor to seamlessly adjust LED brightness based on surrounding ambient light.
-* **Precise Timekeeping:** High-precision **DS3231 RTC** with battery backup ensures accurate timekeeping across power loss.
-* **Addressable LED Matrix:** Driven by **WS2812B** individually addressable RGB LEDs (60 LEDs/m density).
+* **Swabian Dialect Matrix:** Unique layout displaying time in authentic Swabian phrasing.
+* **Hardware Flexible (Zephyr RTOS):** Highly portable across various microcontrollers (ESP32, STM32, NXP, etc.) thanks to Zephyr's Devicetree abstraction.
+* **Automated Brightness:** Features a **BH1750** ambient light sensor to seamlessly adjust LED brightness according to room lighting.
+* **Precise Timekeeping:** High-precision **DS3231 RTC** module with battery backup ensures reliable timekeeping across power interruptions.
+* **Addressable LED Matrix:** Driven by **WS2812B** RGB LEDs (60 LEDs/m density).
 * **Robust Firmware:** Built on **Zephyr RTOS 4.4.2**.
 
 ---
 
 ## 🖨️ 3D Printed Parts & Enclosure
 
-The housing, front matrix grid, and diffuser plates are designed for 3D printing.
+The enclosure, front matrix grid, and diffuser plates are optimized for 3D printing.
 
-* 📐 **3D Models & STL Files:** Download the printable files from [Printables / Thingiverse / GitHub Release Placeholders](https://example.com/your-3d-clock-files).
-* **Material Recommendation:** **PETG** is highly recommended for stability and durability. 
-  * *Tested Setup:* Black PETG (for the chassis/grid) and transparent PETG (for the diffusers).
-  * *Alternatives:* White PETG or other materials (like PLA) should also work fine depending on your printer setup.
+* 📐 **STL Files:** Download printable files from the [Releases](../../releases) section.
+* **Material Recommendation:** **PETG** is highly recommended for mechanical stability and durability.
+  * *Tested Setup:* Black PETG (chassis & matrix grid) + transparent PETG (diffuser layer).
 
 ---
 
@@ -33,34 +31,35 @@ The housing, front matrix grid, and diffuser plates are designed for 3D printing
 
 ### Electronics & Hardware
 
-| Component                     | Description                                                                      | Notes    |
-| :---                          | :---                                                                             | :---     |
-| **Adafruit ItsyBitsy RP2040** | Main microcontroller running Zephyr RTOS (includes onboard 74HCT level shifter). | Required |
-| **WS2812B LED Strip**         | 60 LEDs/m density (required 104 LEDs ~approx. 2m).                               | Required |
-| **DS3231 RTC Module**         | High-precision I2C real-time clock with coin cell backup battery.                | Required |
-| **BH1750 Module**             | Digital ambient light sensor (I2C) for automatic brightness adjustment.          | Required |
-| **Fuse Panel Mount**          | Inline/Panel-mount fuse holder for power safety protection.                      | Required |
-| **DC Jack Panel Mount**       | Standard 5.5mm x 2.1mm DC barrel connector for 5V power input.                   | Required |
-| **Plexiglass / Acrylic Disc** | 300 mm diameter acrylic panel for a clean front finish.                          | Optional |
-| **Mirrored Window Tint Film** | One-way mirror, car window tint, etc ...                                         | Optional |
+| Component | Description | Notes / Selection Rationale |
+| :--- | :--- | :--- |
+| **Adafruit ItsyBitsy RP2040** | Main microcontroller board running Zephyr RTOS. | **Selected because** it includes an onboard **74HCT125 level shifter**, which is highly recommended for driving the required 5V logic signal of WS2812B LEDs without extra components. |
+| **WS2812B LED Strip** | 60 LEDs/m density (~104 LEDs / approx. 2 meters needed). | Required |
+| **DS3231 RTC Module** | High-precision I2C real-time clock with coin cell backup. | Required |
+| **BH1750 Sensor** | Digital ambient light sensor (I2C interface). | Required |
+| **Fuse Holder & Fuse** | Panel-mount inline fuse holder for power safety protection. | Required |
+| **DC Jack Panel Mount** | Standard 5.5mm x 2.1mm DC barrel jack for 5V power supply. | Required |
+| **Acrylic Front Plate** | Approx. 300 mm diameter clear/smoked acrylic panel. | Optional |
+| **Mirrored Window Film** | One-way mirror or window tint film for contrast enhancement. | Optional |
+
 ---
 
 ## 🔌 Hardware Connections & Pinout
 
-Below is the standard wiring assignment configured in the Zephyr Devicetree:
+Standard signal wiring as configured in the Zephyr Devicetree:
 
-| Peripherals | Module Pin | Board Pin (ItsyBitsy RP2040) | Protocol / Notes |
+| Peripheral | Module Pin | Board Pin | Protocol / Notes |
 | :--- | :--- | :--- | :--- |
-| **DS3231 RTC** | SDA / SCL | I2C0 SDA / SCL | I2C Bus |
+| **DS3231 RTC** | SDA / SCL | I2C0 SDA / SCL | Shared I2C Bus |
 | **BH1750 Sensor** | SDA / SCL | I2C0 SDA / SCL | Shared I2C Bus |
-| **WS2812B Strip** | Data Input | Pin 5 (5V Logic Out) | Driven via onboard 74HCT level shifter |
-| **Power Input** | 5V / GND | 5V / GND | Powered via DC Jack + Fuse |
+| **WS2812B Strip** | Data Input | Pin 5 (5V Logic Out) | Driven directly via the onboard level shifter |
+| **Power Input** | 5V / GND | 5V / GND | Powered via DC Jack & fuse |
 
 ---
 
 ## 💻 Development Environment & Build
 
-This project uses **Zephyr RTOS 4.4.2**, managed via the **West** meta-tool and **CMake**. It follows Zephyr's **T2 (Application Repository) workspace topology**.
+This project runs on **Zephyr RTOS 4.4.2**, managed using **West** and **CMake** (T2 Application Repository topology).
 
 ### Prerequisites
 
@@ -71,44 +70,36 @@ Follow the official [Zephyr Getting Started Guide](https://docs.zephyrproject.or
 1. **Clone the Application Repository**
    ```bash
    git clone https://github.com/AssFactory/SimpleWordClock.git
-   cd SimpleWordClock
    ```
 
 2. **Create & Activate Python Virtual Environment**
    ```bash
-   cd ..
    python -m venv .venv
-   source .venv/Scripts/activate  # On Linux/macOS use: source .venv/bin/activate
+   source .venv/Scripts/activate  # On Linux/macOS: source .venv/bin/activate
    ```
 
-3. **Install West Meta-Tool**
+3. **Install West & Initialize Workspace**
    ```bash
    python -m pip install west
-   ```
-
-4. **Initialize Workspace & Fetch Dependencies**
-   ```bash
-   cd SimpleWordClock
    west init -l
    west update
    ```
 
-5. **Install Python Package Dependencies**
+4. **Install Python Dependencies**
    ```bash
    west packages pip --install
    ```
 
-6. **Build Firmware**
+5. **Build Firmware**
    ```bash
    west build -b adafruit_itsybitsy_rp2040 -p always
    ```
 
-7. **Flash to Target**
-   Connect the Adafruit ItsyBitsy RP2040 in bootloader mode (hold `BOOTSEL` button while plugging in USB) and flash:
+6. **Flash Target**
+   Connect the board in bootloader mode (hold the `BOOTSEL` button while plugging in USB)
    ```bash
    west flash
    ```
-
 ---
 
 ## 🤝 Contributing
