@@ -1,108 +1,122 @@
-# 🕒 Simple Word Clock
+# 🕒 Simple Word Clock (Swabian Edition)
 
-A German word clock project based on the **Adafruit ItsyBitsy RP2040**.
+A custom, embedded German word clock featuring a **Swabian dialect matrix**, powered by [Zephyr RTOS](https://www.zephyrproject.org/).
 
-The project combines a word-based LED matrix with a real-time clock and ambient light sensing. The firmware is developed using **Zephyr RTOS**.
-
-The project uses Zephyr's **T2 (Application Repository) workspace topology**. The application repository contains the project-specific files and `west.yml`, while Zephyr and its required modules are managed separately by West in the workspace.
+Designed around the **Adafruit ItsyBitsy RP2040**, this open-source project combines precise timekeeping, automatic brightness control, and addressable RGB LEDs into an elegant wall or desktop clock.
 
 ---
 
 ## 🚀 Features
 
-* **Swabian Dialect Matrix:** Unique front layout displaying the time in a Swabian-inspired word arrangement.
-* **Automated Brightness:** Uses a **BH1750** ambient light sensor to adjust the LED brightness according to the surrounding light.
-* **Precise Timekeeping:** Uses a **DS3231 RTC** for accurate timekeeping with battery backup.
-* **Addressable LED Matrix:** Controls the clock illumination using **WS2812B** individually addressable RGB LEDs.
+* **Swabian Dialect Matrix:** Unique front layout displaying time in a Swabian-inspired word arrangement ("Viertel x", "Halb x", etc.).
+* **Integrated Level Shifter:** Built around the **Adafruit ItsyBitsy RP2040**, which features an onboard **74HCT125 level shifter**. This simplifies wiring significantly by driving the 5V logic signal for WS2812B LEDs directly.
+* **Hardware Flexible (Zephyr RTOS):** Thanks to Zephyr's Devicetree abstraction, the firmware is highly portable and can easily be ported to other microcontrollers (e.g., **ESP32, STM32, NXP**).
+* **Automated Brightness:** Uses a **BH1750** ambient light sensor to seamlessly adjust LED brightness based on surrounding ambient light.
+* **Precise Timekeeping:** High-precision **DS3231 RTC** with battery backup ensures accurate timekeeping across power loss.
+* **Addressable LED Matrix:** Driven by **WS2812B** individually addressable RGB LEDs (60 LEDs/m density).
+* **Robust Firmware:** Built on **Zephyr RTOS 4.4.2**.
 
 ---
 
-## 🛠️ Hardware & Components
+## 🖨️ 3D Printed Parts & Enclosure
 
-| Component                     | Description                                                       |
-| :---------------------------- | :---------------------------------------------------------------- |
-| **Adafruit ItsyBitsy RP2040** | Main microcontroller running the Zephyr firmware.                 |
-| **WS2812B LED Matrix**        | Individually addressable RGB LEDs for displaying the time.        |
-| **DS3231 RTC**                | High-precision real-time clock with battery backup.               |
-| **BH1750 Sensor**             | Digital ambient light sensor for automatic brightness adjustment. |
+The housing, front matrix grid, and diffuser plates are designed for 3D printing.
+
+* 📐 **3D Models & STL Files:** Download the printable files from [Printables / Thingiverse / GitHub Release Placeholders](https://example.com/your-3d-clock-files).
+* **Material Recommendation:** **PETG** is highly recommended for stability and durability. 
+  * *Tested Setup:* Black PETG (for the chassis/grid) and transparent PETG (for the diffusers).
+  * *Alternatives:* White PETG or other materials (like PLA) should also work fine depending on your printer setup.
+
+---
+
+## 🛠️ Bill of Materials (BOM)
+
+### Electronics & Hardware
+
+| Component                     | Description                                                                      | Notes    |
+| :---                          | :---                                                                             | :---     |
+| **Adafruit ItsyBitsy RP2040** | Main microcontroller running Zephyr RTOS (includes onboard 74HCT level shifter). | Required |
+| **WS2812B LED Strip**         | 60 LEDs/m density (required 104 LEDs ~approx. 2m).                               | Required |
+| **DS3231 RTC Module**         | High-precision I2C real-time clock with coin cell backup battery.                | Required |
+| **BH1750 Module**             | Digital ambient light sensor (I2C) for automatic brightness adjustment.          | Required |
+| **Fuse Panel Mount**          | Inline/Panel-mount fuse holder for power safety protection.                      | Required |
+| **DC Jack Panel Mount**       | Standard 5.5mm x 2.1mm DC barrel connector for 5V power input.                   | Required |
+| **Plexiglass / Acrylic Disc** | 300 mm diameter acrylic panel for a clean front finish.                          | Optional |
+| **Mirrored Window Tint Film** | One-way mirror, car window tint, etc ...                                         | Optional |
+---
+
+## 🔌 Hardware Connections & Pinout
+
+Below is the standard wiring assignment configured in the Zephyr Devicetree:
+
+| Peripherals | Module Pin | Board Pin (ItsyBitsy RP2040) | Protocol / Notes |
+| :--- | :--- | :--- | :--- |
+| **DS3231 RTC** | SDA / SCL | I2C0 SDA / SCL | I2C Bus |
+| **BH1750 Sensor** | SDA / SCL | I2C0 SDA / SCL | Shared I2C Bus |
+| **WS2812B Strip** | Data Input | Pin 5 (5V Logic Out) | Driven via onboard 74HCT level shifter |
+| **Power Input** | 5V / GND | 5V / GND | Powered via DC Jack + Fuse |
 
 ---
 
 ## 💻 Development Environment & Build
 
-The firmware is based on **Zephyr RTOS 4.4.0** and uses **West** and **CMake**.
-
-The project follows Zephyr's **T2 (Application Repository) workspace topology**. The application repository acts as the local West manifest repository, while the Zephyr source tree and required modules are maintained by West in the workspace.
+This project uses **Zephyr RTOS 4.4.2**, managed via the **West** meta-tool and **CMake**. It follows Zephyr's **T2 (Application Repository) workspace topology**.
 
 ### Prerequisites
 
-Before setting up this project, install the required host tools according to the official Zephyr **Getting Started Guide**:
+Follow the official [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to set up host tools (Python, CMake, Ninja, Git, Device Tree Compiler, and the Zephyr SDK toolchain) for Windows, macOS, or Linux.
 
-[Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html?utm_source=chatgpt.com)
+### Setup & Build Steps
 
-The guide covers the required tools for Windows, Linux, and macOS, including Python, CMake, Ninja, Git, the Device Tree Compiler, and the Zephyr SDK/toolchain.
+1. **Clone the Application Repository**
+   ```bash
+   git clone https://github.com/AssFactory/SimpleWordClock.git
+   cd SimpleWordClock
+   ```
 
+2. **Create & Activate Python Virtual Environment**
+   ```bash
+   cd ..
+   python -m venv .venv
+   source .venv/Scripts/activate  # On Linux/macOS use: source .venv/bin/activate
+   ```
 
-### 1. Clone the repository
+3. **Install West Meta-Tool**
+   ```bash
+   python -m pip install west
+   ```
 
-Clone the application repository
+4. **Initialize Workspace & Fetch Dependencies**
+   ```bash
+   cd SimpleWordClock
+   west init -l
+   west update
+   ```
 
-```bash
-git clone https://github.com/AssFactory/SimpleWordClock.git
-```
+5. **Install Python Package Dependencies**
+   ```bash
+   west packages pip --install
+   ```
 
-### 2. Create the Python virtual environment
+6. **Build Firmware**
+   ```bash
+   west build -b adafruit_itsybitsy_rp2040 -p always
+   ```
 
-The Python virtual environment is kept outside the Git repository.
+7. **Flash to Target**
+   Connect the Adafruit ItsyBitsy RP2040 in bootloader mode (hold `BOOTSEL` button while plugging in USB) and flash:
+   ```bash
+   west flash
+   ```
 
-```bash
-cd ..
-python -m venv .venv
-```
+---
 
-Activate environment
+## 🤝 Contributing
 
-```bash
-source .venv/Scripts/activate
-```
+Contributions, bug reports, and feature requests are welcome! Feel free to check out the [issues page](../../issues) or submit a pull request.
 
-### 3. Install West
+---
 
-Install West into the active virtual environment.
-
-```bash
-python -m pip install west
-```
-
-### 4. Initialize the Zephyr workspace
-
-Change to the application repository containing `west.yml` and nitialize the West workspace using the **local** manifest.
-
-```bash
-cd /SimpleWordClock
-west init -l .
-```
-
-Fetch Zephyr and the modules defined by `west.yml`
-
-```bash
-west update
-```
-
-### 5. Install Zephyr Python dependencies
-
-Install all Python packages required by the checked-out Zephyr version and its configured modules.
-
-```bash
-west packages pip --install
-```
-### 6. Build the firmware
-
-Build the application.
-
-```bash
-west build -b adafruit_itsybitsy_rp2040 -p always
-```
 ## 📝 License
 
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+This project is open-source software licensed under the [MIT License](LICENSE).
