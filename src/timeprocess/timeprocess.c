@@ -1,9 +1,12 @@
-
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
 #include <stdint.h>
 
 #include "timeprocess.h"
 #include "../display/display.h"
+
+LOG_MODULE_REGISTER(timeprocess, LOG_LEVEL_INF);
 
 void timeprocess_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -11,6 +14,8 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
 
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
+
+    LOG_INF("start timeprocess thread");
 
     while (true) {
         /*
@@ -20,7 +25,7 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
          */
 
         int ret = display_request_update();
-
+   
         if (ret < 0) {
             printk("timeprocess: Display request failed: %d\n", ret);
         }

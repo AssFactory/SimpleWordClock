@@ -1,9 +1,13 @@
 
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
 #include <stdint.h>
 
 #include "ambiente.h"
 #include "../display/display.h"
+
+LOG_MODULE_REGISTER(ambiente, LOG_LEVEL_INF);
 
 void ambiente_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -11,6 +15,8 @@ void ambiente_thread(void *arg1, void *arg2, void *arg3)
 
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
+
+    LOG_INF("start ambiente thread");
 
     while (true) {
         /*
