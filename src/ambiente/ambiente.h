@@ -3,4 +3,6 @@
 
 void ambiente_thread(void *arg1, void *arg2, void *arg3);
 
+uint16_t ambiente_get_lux(void);
+
 #endif

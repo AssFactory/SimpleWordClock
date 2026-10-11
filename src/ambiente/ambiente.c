@@ -1,4 +1,3 @@
-
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -33,4 +32,10 @@ void ambiente_thread(void *arg1, void *arg2, void *arg3)
 
         k_msleep(interval_ms);
     }
+}
+
+uint16_t ambiente_get_lux(void)
+{
+
+    return 0; 
 }
