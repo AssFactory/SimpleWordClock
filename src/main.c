@@ -9,7 +9,7 @@
 
 /* Thread intervals */
 #define TIMEPROCESS_INTERVAL_MS  1000U
-#define AMBIENTE_INTERVAL_MS     1000U
+#define AMBIENTE_INTERVAL_MS     5000U
 
 /* Thread stack sizes */
 #define TIMEPROCESS_STACK_SIZE   1024
