@@ -10,20 +10,24 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "display.h"
+#include "../ambiente/ambiente.h"
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
 #define LED_STRIP_NODE DT_ALIAS(led_strip)
 #define LED_COUNT DT_PROP(LED_STRIP_NODE, chain_length)
 
-#define LED_NONE UINT8_MAX
+#define NO_LED UINT8_MAX
 
 #define DISPLAY_WIDTH  12
 #define DISPLAY_HEIGHT 10
 
-#define LED_STRIP_MIN_BRIGHTNESS 10
+#define SENSOR_MIN_BRIGHTNESS 100
+#define SENSOR_MAX_BRIGHTNESS 3000
+#define LED_STRIP_MIN_BRIGHTNESS 70
 #define LED_STRIP_MAX_BRIGHTNESS 200
 
 #define LED_STRIP_MAX_CURRENT 2500
@@ -42,10 +46,10 @@ static struct k_work_q display_workq;
 /* Signal that the LED test has finished */
 K_SEM_DEFINE(led_test_done, 0, 1);
 
-/* Prevent multiple simultaneous LED test requests */
-K_MUTEX_DEFINE(led_test_mutex);
+/* Prevent multiple access to pixel buffer */
+ K_MUTEX_DEFINE(pixel_buffer_lock);
 
-/* Work handlers */
+ /* Work handlers */
 static void display_update_handler(struct k_work *work);
 static void display_led_test_handler(struct k_work *work);
 
@@ -67,12 +71,12 @@ static const uint8_t gamma_table[256] = {
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
     2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
     5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
-    10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
-    17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
-    25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
-    37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
-    51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
-    69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
    90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
   115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
@@ -83,25 +87,22 @@ static const uint8_t gamma_table[256] = {
 /* Map logical grid coordinates to physical LED indices */
 static const uint8_t led_map[DISPLAY_WIDTH * DISPLAY_HEIGHT] = {
     /* X:       0         1         2         3    4    5    6    7    8         9        10        11 */
-    /* Y 0 */ LED_NONE, LED_NONE, LED_NONE, 103, 102, 101, 100,  99,  98, LED_NONE, LED_NONE, LED_NONE,
-    /* Y 1 */ LED_NONE,       88,       89,  90,  91,  92,  93,  94,  95,       96,       97, LED_NONE,
-    /* Y 2 */       87,       86,       85,  84,  83,  82,  81,  80,  79,       78,       77,       76,
-    /* Y 3 */       64,       65,       66,  67,  68,  69,  70,  71,  72,       73,       74,       75,
-    /* Y 4 */       63,       62,       61,  60,  59,  58,  57,  56,  55,       54,       53,       52,
-    /* Y 5 */       40,       41,       42,  43,  44,  45,  46,  47,  48,       49,       50,       51,
-    /* Y 6 */       39,       38,       37,  36,  35,  34,  33,  32,  31,       30,       29,       28,
-    /* Y 7 */       16,       17,       18,  19,  20,  21,  22,  23,  24,       25,       26,       27,
-    /* Y 8 */ LED_NONE,       15,       14,  13,  12,  11,  10,   9,   8,        7,        6, LED_NONE,
-    /* Y 9 */ LED_NONE, LED_NONE, LED_NONE,   0,   1,   2,   3,   4,   5, LED_NONE, LED_NONE, LED_NONE
+    /* Y 0 */ NO_LED, NO_LED, NO_LED, 103, 102, 101, 100,  99,  98, NO_LED, NO_LED, NO_LED,
+    /* Y 1 */ NO_LED,     88,     89,  90,  91,  92,  93,  94,  95,     96,     97, NO_LED,
+    /* Y 2 */     87,     86,     85,  84,  83,  82,  81,  80,  79,     78,     77,     76,
+    /* Y 3 */     64,     65,     66,  67,  68,  69,  70,  71,  72,     73,     74,     75,
+    /* Y 4 */     63,     62,     61,  60,  59,  58,  57,  56,  55,     54,     53,     52,
+    /* Y 5 */     40,     41,     42,  43,  44,  45,  46,  47,  48,     49,     50,     51,
+    /* Y 6 */     39,     38,     37,  36,  35,  34,  33,  32,  31,     30,     29,     28,
+    /* Y 7 */     16,     17,     18,  19,  20,  21,  22,  23,  24,     25,     26,     27,
+    /* Y 8 */ NO_LED,     15,     14,  13,  12,  11,  10,   9,   8,      7,      6, NO_LED,
+    /* Y 9 */ NO_LED, NO_LED, NO_LED,   0,   1,   2,   3,   4,   5, NO_LED, NO_LED, NO_LED
 };
 
 static const struct device *const led_strip = DEVICE_DT_GET(LED_STRIP_NODE);
 
 /* Logical pixel buffer and physical output buffer */
-static struct led_rgb pixels[LED_COUNT];
-static struct led_rgb output_pixels[LED_COUNT];
-
-static uint8_t brightness = LED_STRIP_MAX_BRIGHTNESS;
+static struct led_rgb pixel_buffer[LED_COUNT];
 
 /*
  * Initialize the display and start its dedicated work queue.
@@ -121,6 +122,20 @@ int display_init(void)
 
     LOG_INF("Display initialized");
     return 0;
+}
+
+int display_clear(void)
+{
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        return ret; 
+    }
+
+    memset(pixel_buffer, 0, sizeof(pixel_buffer));
+
+    k_mutex_unlock(&pixel_buffer_lock);
+
+    return display_request_update();
 }
 
 /*
@@ -153,19 +168,42 @@ int display_request_update(void)
     return ret;
 }
 
+uint8_t display_scale_brightness(uint16_t lux_val)
+{
+    if (lux_val <= SENSOR_MIN_BRIGHTNESS) {
+        return LED_STRIP_MIN_BRIGHTNESS;
+    }
+    if (lux_val >= SENSOR_MAX_BRIGHTNESS) {
+        return LED_STRIP_MAX_BRIGHTNESS;
+    }
+
+    int32_t in_range = SENSOR_MAX_BRIGHTNESS - SENSOR_MIN_BRIGHTNESS;
+    int32_t out_range = LED_STRIP_MAX_BRIGHTNESS - LED_STRIP_MIN_BRIGHTNESS;
+    
+    int32_t scaled = LED_STRIP_MIN_BRIGHTNESS + (((int32_t)(lux_val - SENSOR_MIN_BRIGHTNESS) * out_range) / in_range);
+
+    return (uint8_t)scaled;
+}
+
 /*
  * Apply brightness, gamma correction and software current limiting,
  * then transmit the resulting RGB values to the LED strip.
  */
 static int display_update(void)
 {
+    static struct led_rgb output_pixels[LED_COUNT];
     uint32_t total_pwm_ratio = 0;
-    uint32_t estimated_led_current = 0;
+    uint8_t brightness = display_scale_brightness(ambiente_get_lux());
+    
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        return ret; 
+    }
 
     for (size_t i = 0; i < LED_COUNT; i++) {
-        uint8_t r = ((uint16_t)pixels[i].r * brightness) / 255U;
-        uint8_t g = ((uint16_t)pixels[i].g * brightness) / 255U;
-        uint8_t b = ((uint16_t)pixels[i].b * brightness) / 255U;
+        uint8_t r = ((uint16_t)pixel_buffer[i].r * brightness) / 255U;
+        uint8_t g = ((uint16_t)pixel_buffer[i].g * brightness) / 255U;
+        uint8_t b = ((uint16_t)pixel_buffer[i].b * brightness) / 255U;
 
         output_pixels[i].r = gamma_table[r];
         output_pixels[i].g = gamma_table[g];
@@ -176,30 +214,21 @@ static int display_update(void)
         total_pwm_ratio += output_pixels[i].b;
     }
 
-    estimated_led_current = (uint32_t)(
-        LED_STRIP_IDLE_CURRENT +
-        ((uint64_t)total_pwm_ratio * LED_MAX_CURRENT_PER_CHANNEL) / 255U
-    );
+    uint32_t estimated_led_current = (uint32_t)(LED_STRIP_IDLE_CURRENT + ((uint64_t)total_pwm_ratio * LED_MAX_CURRENT_PER_CHANNEL) / 255U);
 
     if (estimated_led_current > LED_STRIP_MAX_CURRENT) {
-        LOG_WRN("Estimated LED current %u mA exceeds budget %u mA; dimming LEDs",
-                (unsigned int)estimated_led_current,
-                (unsigned int)LED_STRIP_MAX_CURRENT);
+        LOG_WRN("Estimated LED current %u mA exceeds budget %u mA; dimming LEDs", (unsigned int)estimated_led_current, (unsigned int)LED_STRIP_MAX_CURRENT);
 
-        uint8_t safety_factor = (uint8_t)(
-            ((uint64_t)(LED_STRIP_MAX_CURRENT - LED_STRIP_IDLE_CURRENT) * 255U) /
-            (estimated_led_current - LED_STRIP_IDLE_CURRENT)
-        );
+        uint8_t safety_factor = (uint8_t)(((uint64_t)(LED_STRIP_MAX_CURRENT - LED_STRIP_IDLE_CURRENT) * 255U) /(estimated_led_current - LED_STRIP_IDLE_CURRENT));
 
         for (size_t i = 0; i < LED_COUNT; i++) {
-            output_pixels[i].r =
-                ((uint16_t)output_pixels[i].r * safety_factor) / 255U;
-            output_pixels[i].g =
-                ((uint16_t)output_pixels[i].g * safety_factor) / 255U;
-            output_pixels[i].b =
-                ((uint16_t)output_pixels[i].b * safety_factor) / 255U;
+            output_pixels[i].r = ((uint16_t)output_pixels[i].r * safety_factor) / 255U;
+            output_pixels[i].g = ((uint16_t)output_pixels[i].g * safety_factor) / 255U;
+            output_pixels[i].b = ((uint16_t)output_pixels[i].b * safety_factor) / 255U;
         }
     }
+
+    k_mutex_unlock(&pixel_buffer_lock);
 
     return led_strip_update_rgb(led_strip, output_pixels, LED_COUNT);
 }
@@ -219,7 +248,7 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
     uint8_t index = led_map[y * DISPLAY_WIDTH + x];
 
     /* The logical position has no physical LED */
-    if (index == LED_NONE) {
+    if (index == NO_LED) {
         return 0;
     }
 
@@ -228,7 +257,15 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
         return -EINVAL;
     }
 
-    pixels[index] = color;
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    
+    if (ret != 0) {
+        return ret;
+    }
+
+    pixel_buffer[index] = color;
+
+    k_mutex_unlock(&pixel_buffer_lock);
     return 0;
 }
 
@@ -240,11 +277,10 @@ static void display_led_test_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
 
-    int ret;
     const struct led_rgb white = {
-        .r = 100,
-        .g = 100,
-        .b = 100
+        .r = 255,
+        .g = 255,
+        .b = 255
     };
     const struct led_rgb off = {
         .r = 0,
@@ -253,13 +289,23 @@ static void display_led_test_handler(struct k_work *work)
     };
 
     bool test_failed = false;
+    
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    
+    if (ret != 0) {
+        LOG_ERR("Failed to lock pixel buffer: %d", ret);
+        k_sem_give(&led_test_done);
+        return;
+    }
+
+    display_clear();
 
     for (uint8_t y = 0; y < DISPLAY_HEIGHT; y++) {
         for (uint8_t x = 0; x < DISPLAY_WIDTH; x++) {
             uint8_t index = led_map[y * DISPLAY_WIDTH + x];
 
             /* Skip logical positions without a physical LED */
-            if (index == LED_NONE) {
+            if (index == NO_LED) {
                 continue;
             }
 
@@ -306,60 +352,40 @@ finished:
         LOG_INF("LED test completed");
     }
 
+    k_mutex_unlock(&pixel_buffer_lock);
+
     /* Wake the shell command waiting for the test */
     k_sem_give(&led_test_done);
 }
 
 /*
- * Start the LED test and block the caller until it finishes.
- * The test itself still runs in the display work queue.
+ * Shell command: led_test
  */
-int display_led_test(void)
-{
-    int ret = k_mutex_lock(&led_test_mutex, K_FOREVER);
+static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
+    
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
-    if (ret != 0) {
-        return ret;
-    }
+    shell_print(sh, "Starting LED test...");
 
     /* Clear a possible leftover completion signal */
     k_sem_reset(&led_test_done);
 
-    ret = k_work_submit_to_queue(&display_workq,
+    int ret = k_work_submit_to_queue(&display_workq,
                                  &display_led_test_work);
 
     if (ret < 0) {
         LOG_ERR("Failed to submit LED test: %d", ret);
-        k_mutex_unlock(&led_test_mutex);
         return ret;
     }
 
     /* Wait until the work handler signals completion */
     ret = k_sem_take(&led_test_done, K_FOREVER);
 
-    k_mutex_unlock(&led_test_mutex);
-
+    if (ret != 0) {
+    shell_error(sh, "Failed waiting for LED test: %d", ret);
     return ret;
 }
-
-/*
- * Shell command: led_test
- */
-static int cmd_led_test(const struct shell *sh,
-                        size_t argc,
-                        char **argv)
-{
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
-
-    shell_print(sh, "Starting LED test...");
-
-    int ret = display_led_test();
-
-    if (ret < 0) {
-        shell_error(sh, "LED test failed: %d", ret);
-        return ret;
-    }
 
     shell_print(sh, "LED test finished");
     return 0;
