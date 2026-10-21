@@ -1,12 +1,188 @@
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/rtc.h>
+#include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
-#include <stdint.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "timeprocess.h"
 #include "../display/display.h"
 
 LOG_MODULE_REGISTER(timeprocess, LOG_LEVEL_INF);
+
+/* Devicetree-Label des DS3231-RTC-Unterknotens */
+#define RTC_NODE DT_NODELABEL(rtc_ext)
+
+static const struct device *const rtc_dev = DEVICE_DT_GET(RTC_NODE);
+
+/* Schützt den zusammengehörigen Zeitstand vor parallelem Zugriff. */
+K_MUTEX_DEFINE(time_cache_mutex);
+
+static struct rtc_time cached_time;
+static bool cached_time_valid;
+
+/* Übernimmt einen Zeitstand sicher in den Cache. */
+static void timeprocess_cache_update(const struct rtc_time *time)
+{
+    k_mutex_lock(&time_cache_mutex, K_FOREVER);
+    cached_time = *time;
+    cached_time_valid = true;
+    k_mutex_unlock(&time_cache_mutex);
+}
+
+int timeprocess_get_time(struct rtc_time *time)
+{
+    if (time == NULL) {
+        return -EINVAL;
+    }
+
+    k_mutex_lock(&time_cache_mutex, K_FOREVER);
+
+    if (!cached_time_valid) {
+        k_mutex_unlock(&time_cache_mutex);
+        return -ENODATA;
+    }
+
+    *time = cached_time;
+    k_mutex_unlock(&time_cache_mutex);
+
+    return 0;
+}
+
+/* Liest die RTC direkt und aktualisiert anschließend den Cache. */
+static int timeprocess_read_rtc(void)
+{
+    struct rtc_time time;
+    int ret = rtc_get_time(rtc_dev, &time);
+
+    if (ret == 0) {
+        timeprocess_cache_update(&time);
+    }
+
+    return ret;
+}
+
+int timeprocess_set_time(const struct rtc_time *time)
+{
+    if (time == NULL) {
+        return -EINVAL;
+    }
+
+    if (!device_is_ready(rtc_dev)) {
+        return -ENODEV;
+    }
+
+    int ret = rtc_set_time(rtc_dev, time);
+
+    if (ret == 0) {
+        /* Cache sofort aktualisieren, ohne den nächsten Thread-Zyklus abzuwarten. */
+        ret = timeprocess_read_rtc();
+    }
+
+    return ret;
+}
+
+/* rtc get */
+static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    struct rtc_time time;
+    int ret = timeprocess_read_rtc();
+
+    if (ret < 0) {
+        shell_error(sh, "RTC lesen fehlgeschlagen: %d", ret);
+        return ret;
+    }
+
+    ret = timeprocess_get_time(&time);
+    if (ret < 0) {
+        shell_error(sh, "Kein gueltiger Zeitwert verfuegbar.");
+        return ret;
+    }
+
+    shell_print(sh, "%04d-%02d-%02d %02d:%02d:%02d",
+                time.tm_year + 1900,
+                time.tm_mon + 1,
+                time.tm_mday,
+                time.tm_hour,
+                time.tm_min,
+                time.tm_sec);
+
+    return 0;
+}
+
+/* rtc set YYYY-MM-DD HH:MM:SS */
+static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
+{
+    if (argc != 4) {
+        shell_error(sh, "Verwendung: rtc set YYYY-MM-DD HH:MM:SS");
+        return -EINVAL;
+    }
+
+    int year, month, day;
+    int hour, minute, second;
+    char extra;
+
+    /* Extra-Zeichen verhindern, dass unvollständige oder angehängte Werte akzeptiert werden. */
+    if (sscanf(argv[2], "%d-%d-%d%c",
+               &year, &month, &day, &extra) != 3 ||
+        sscanf(argv[3], "%d:%d:%d%c",
+               &hour, &minute, &second, &extra) != 3) {
+        shell_error(sh, "Format: rtc set 2026-10-21 14:30:00");
+        return -EINVAL;
+    }
+
+    /* DS3231 unterstützt hier den Bereich 2000 bis 2099. */
+    if (year < 2000 || year > 2099 ||
+        month < 1 || month > 12 ||
+        day < 1 || day > 31 ||
+        hour < 0 || hour > 23 ||
+        minute < 0 || minute > 59 ||
+        second < 0 || second > 59) {
+        shell_error(sh, "Datum oder Uhrzeit ausserhalb des gueltigen Bereichs.");
+        return -EINVAL;
+    }
+
+    struct rtc_time time = {
+        .tm_year = year - 1900,
+        .tm_mon = month - 1,
+        .tm_mday = day,
+        .tm_hour = hour,
+        .tm_min = minute,
+        .tm_sec = second,
+        .tm_wday = -1,
+        .tm_yday = -1,
+        .tm_isdst = -1,
+        .tm_nsec = 0,
+    };
+
+    int ret = timeprocess_set_time(&time);
+
+    if (ret < 0) {
+        shell_error(sh, "RTC setzen fehlgeschlagen: %d", ret);
+        return ret;
+    }
+
+    shell_print(sh, "RTC gesetzt auf %04d-%02d-%02d %02d:%02d:%02d",
+                year, month, day, hour, minute, second);
+
+    return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    rtc_commands,
+    SHELL_CMD(get, NULL, "Datum und Uhrzeit auslesen", cmd_rtc_get),
+    SHELL_CMD(set, NULL, "Zeit setzen: set YYYY-MM-DD HH:MM:SS", cmd_rtc_set),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_CMD_REGISTER(rtc, &rtc_commands, "RTC Datum und Uhrzeit", NULL);
 
 void timeprocess_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -15,19 +191,23 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
 
-    LOG_INF("start timeprocess thread");
+    LOG_INF("Start timeprocess thread");
+
+    if (!device_is_ready(rtc_dev)) {
+        LOG_ERR("DS3231 RTC ist nicht bereit");
+        return;
+    }
 
     while (true) {
-        /*
-         * TODO:
-         * Read the current time from the RTC.
-         * Process the time into the corresponding words.
-         */
+        int ret = timeprocess_read_rtc();
 
-        int ret = display_request_update();
-   
         if (ret < 0) {
-            printk("timeprocess: Display request failed: %d\n", ret);
+            LOG_WRN("RTC lesen fehlgeschlagen: %d", ret);
+        }
+
+        ret = display_request_update();
+        if (ret < 0) {
+            LOG_ERR("Display request failed: %d", ret);
         }
 
         k_msleep(interval_ms);

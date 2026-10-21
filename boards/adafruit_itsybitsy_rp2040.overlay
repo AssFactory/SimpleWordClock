@@ -1,8 +1,4 @@
-/*
- * Copyright (c) 2021 Nordic Semiconductor ASA
- *
- * SPDX-License-Identifier: Apache-2.0
- */
+#include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2040-pinctrl.h>
 
 / {
 	chosen {
@@ -22,3 +18,43 @@
 	gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
 	chain-length = <104>;
 };
+
+/* remap i2C interface to gpio 24 (SDA) and 25 (SCL)*/
+&pinctrl {
+    /* Standard-Zustand im aktiven Betrieb */
+    i2c0_default: i2c0_default {
+        group1 {
+            pinmux = <I2C0_SDA_P24>, <I2C0_SCL_P25>;
+            bias-pull-up;     
+            input-enable;     
+        };
+    };
+};
+
+/* I2C bus and devices */
+&i2c0 {
+    status = "okay";
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-names = "default";
+    clock-frequency = <I2C_BITRATE_STANDARD>;
+
+    ds3231: ds3231@68 {
+        compatible = "maxim,ds3231-mfd";
+        reg = <0x68>;
+        status = "okay";
+
+        rtc_ext: rtc {
+            compatible = "maxim,ds3231-rtc";
+            status = "okay";
+
+            isw-gpios = <&gpio0 29 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        };
+    };
+
+    bh1750: bh1750@23 {
+        compatible = "rohm,bh1750";
+        reg = <0x23>;
+        status = "okay";
+    };
+};
+
