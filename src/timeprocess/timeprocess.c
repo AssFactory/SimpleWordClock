@@ -106,35 +106,54 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
         return ret;
     }
 
-    shell_print(sh, "%04d-%02d-%02d %02d:%02d:%02d",
+    shell_print(sh, "%04d-%02d-%02d %02d:%02d",
                 time.tm_year + 1900,
                 time.tm_mon + 1,
                 time.tm_mday,
                 time.tm_hour,
-                time.tm_min,
-                time.tm_sec);
+                time.tm_min);
 
     return 0;
 }
 
-/* rtc set YYYY-MM-DD HH:MM:SS */
+/* rtc set YYYY-MM-DD HH:MM */
+/* rtc set YYYY-MM-DD HH:MM */
 static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 {
-    if (argc != 4) {
-        shell_error(sh, "Verwendung: rtc set YYYY-MM-DD HH:MM:SS");
+    if (argc != 3) {
+        shell_error(sh, "Verwendung: rtc set YYYY-MM-DD HH:MM");
         return -EINVAL;
     }
 
     int year, month, day;
-    int hour, minute, second;
-    char extra;
+    int hour, minute;
+    char dummy_date, dummy_time;
 
-    /* Extra-Zeichen verhindern, dass unvollständige oder angehängte Werte akzeptiert werden. */
-    if (sscanf(argv[2], "%d-%d-%d%c",
-               &year, &month, &day, &extra) != 3 ||
-        sscanf(argv[3], "%d:%d:%d%c",
-               &hour, &minute, &second, &extra) != 3) {
-        shell_error(sh, "Format: rtc set 2026-10-21 14:30:00");
+    /* Wir versuchen, die Werte einzulesen UND ein unerwünschtes Nachfolge-Zeichen (dummy) mitzulesen.
+     * Wenn sscanf GENAU 3 Werte beim Datum und GENAU 2 Werte bei der Zeit liefert 
+     * UND KEIN zusätzliches Zeichen am Ende existiert, schlägt der zweite Teil fehl 
+     * ODER wir prüfen die Anzahl der scanf-Erfolge. 
+     * Besser und stabiler: Wir prüfen, ob sscanf genau die Anzahl liefert 
+     * und nutzen einen Punkt/Leerzeichen oder prüfen das Ende direkt. */
+
+    // Sauberer Ansatz ohne %n:
+    // Wir prüfen mit sscanf ob die Zahlen stimmen. Um Müll am Ende abzufangen, 
+    // hängen wir ein %c an und erwarten, dass sscanf DIESES ZEICHEN NICHT finden kann 
+    // (sprich: der String ist hier zu Ende und sscanf gibt für diesen Teil 0 zurück).
+    
+    int scanned;
+
+    // Datum prüfen: 3 Integers müssen kommen, danach darf nichts mehr kommen
+    scanned = sscanf(argv[1], "%d-%d-%d%c", &year, &month, &day, &dummy_date);
+    if (scanned != 3) {
+        shell_error(sh, "Format-Fehler beim Datum: rtc set 2026-10-21 14:30");
+        return -EINVAL;
+    }
+
+    // Zeit prüfen: 2 Integers müssen kommen, danach darf nichts mehr kommen
+    scanned = sscanf(argv[2], "%d:%d%c", &hour, &minute, &dummy_time);
+    if (scanned != 2) {
+        shell_error(sh, "Format-Fehler bei der Zeit: rtc set 2026-10-21 14:30");
         return -EINVAL;
     }
 
@@ -143,8 +162,7 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
         month < 1 || month > 12 ||
         day < 1 || day > 31 ||
         hour < 0 || hour > 23 ||
-        minute < 0 || minute > 59 ||
-        second < 0 || second > 59) {
+        minute < 0 || minute > 59) {
         shell_error(sh, "Datum oder Uhrzeit ausserhalb des gueltigen Bereichs.");
         return -EINVAL;
     }
@@ -155,7 +173,7 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
         .tm_mday = day,
         .tm_hour = hour,
         .tm_min = minute,
-        .tm_sec = second,
+        .tm_sec = 0,
         .tm_wday = -1,
         .tm_yday = -1,
         .tm_isdst = -1,
@@ -169,8 +187,8 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
         return ret;
     }
 
-    shell_print(sh, "RTC gesetzt auf %04d-%02d-%02d %02d:%02d:%02d",
-                year, month, day, hour, minute, second);
+    shell_print(sh, "RTC gesetzt auf %04d-%02d-%02d %02d:%02d",
+                year, month, day, hour, minute);
 
     return 0;
 }
@@ -178,7 +196,7 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 SHELL_STATIC_SUBCMD_SET_CREATE(
     rtc_commands,
     SHELL_CMD(get, NULL, "Datum und Uhrzeit auslesen", cmd_rtc_get),
-    SHELL_CMD(set, NULL, "Zeit setzen: set YYYY-MM-DD HH:MM:SS", cmd_rtc_set),
+    SHELL_CMD(set, NULL, "Zeit setzen: set YYYY-MM-DD HH:MM", cmd_rtc_set),
     SHELL_SUBCMD_SET_END
 );
 
