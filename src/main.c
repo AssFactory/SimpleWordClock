@@ -1,6 +1,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
+#include <errno.h>
 #include <stdint.h>
 
 #include "timeprocess/timeprocess.h"
@@ -52,7 +53,6 @@ static int cmd_bootsel(const struct shell *sh, size_t argc, char **argv)
 // Registriert den Top-Level-Befehl "bootsel" in der Zephyr-Shell
 SHELL_CMD_REGISTER(bootsel, NULL, "Reboot into RP2040 BOOTSEL mode", cmd_bootsel);
 
-
 int main(void)
 {
     int ret = display_init();
@@ -62,7 +62,7 @@ int main(void)
         return ret;
     }
 
-    k_thread_create(
+    k_tid_t tid = k_thread_create(
         &timeprocess_thread_data,
         timeprocess_stack,
         K_THREAD_STACK_SIZEOF(timeprocess_stack),
@@ -75,7 +75,14 @@ int main(void)
         K_NO_WAIT
     );
 
-    k_thread_create(
+    if (!tid) {
+        printk("Failed to create timeprocess thread\n");
+        return -EAGAIN;
+    }
+
+    k_thread_start(&timeprocess_thread_data);
+
+    tid = k_thread_create(
         &ambiente_thread_data,
         ambiente_stack,
         K_THREAD_STACK_SIZEOF(ambiente_stack),
@@ -87,6 +94,13 @@ int main(void)
         0,
         K_NO_WAIT
     );
+
+    if (!tid) {
+        printk("Failed to create ambiente thread\n");
+        return -EAGAIN;
+    }
+
+    k_thread_start(&ambiente_thread_data);
 
     return 0;
 }
