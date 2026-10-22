@@ -6,6 +6,9 @@
 #include "timeprocess/timeprocess.h"
 #include "ambiente/ambiente.h"
 #include "display/display.h"
+#include <zephyr/shell/shell.h>
+#include <pico/bootrom.h>
+
 
 /* Thread intervals */
 #define TIMEPROCESS_INTERVAL_MS  1000U
@@ -31,6 +34,24 @@ static const uint32_t timeprocess_interval_ms =
 
 static const uint32_t ambiente_interval_ms =
     AMBIENTE_INTERVAL_MS;
+
+static int cmd_bootsel(const struct shell *sh, size_t argc, char **argv)
+{
+    shell_print(sh, "Rebooting into BOOTSEL/UF2 mode...");
+    
+    // Kurze Pause, damit die Shell die Nachricht noch senden kann
+    k_msleep(100); 
+
+    // Parameter 1: GPIO-Maske für LEDs, die im Bootsel-Modus blinken sollen (0 = keine)
+    // Parameter 2: Interface-Auswahl (0 = USB Mass Storage / UF2)
+    reset_usb_boot(0, 0); 
+    
+    return 0;
+}
+
+// Registriert den Top-Level-Befehl "bootsel" in der Zephyr-Shell
+SHELL_CMD_REGISTER(bootsel, NULL, "Reboot into RP2040 BOOTSEL mode", cmd_bootsel);
+
 
 int main(void)
 {
