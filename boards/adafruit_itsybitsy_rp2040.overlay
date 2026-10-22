@@ -13,10 +13,16 @@
 	};
 };
 
-/* WS2812 LED-Strip */
+/* Override for external WS2812 LED-Strip */
 &ws2812 {
-	gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
-	chain-length = <104>;
+    gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+    chain-length = <104>;
+};
+
+&ws2812_pio0_default {
+    ws2812 {
+        pinmux = <PIO0_P14>;
+    };
 };
 
 /* remap i2C interface to gpio 24 (SDA) and 25 (SCL)*/
