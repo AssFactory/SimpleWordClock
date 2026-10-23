@@ -391,4 +391,12 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
     return 0;
 }
 
-SHELL_CMD_REGISTER(led_test, NULL, "Test all LEDs", cmd_led_test);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    display_commands,
+    SHELL_CMD(test, NULL, "Get actual brightness", cmd_led_test),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_CMD_REGISTER(display, &display_commands, "Ambiente functions", NULL);
+
