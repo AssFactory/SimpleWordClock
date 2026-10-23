@@ -100,9 +100,13 @@ static int cmd_lux(const struct shell *shell,
     return 0;
 }
 
-SHELL_CMD_REGISTER(lux, NULL,
-                   "Letzten BH1750-Lux-Wert anzeigen",
-                   cmd_lux);
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    ambiente_commands,
+    SHELL_CMD(get, NULL, "Get actual brightness", cmd_lux),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_CMD_REGISTER(ambiente, &ambiente_commands, "Ambiente functions", NULL);
 
 /*
  * Bestehender Ambiente-Thread:
