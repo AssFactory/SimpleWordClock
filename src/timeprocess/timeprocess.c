@@ -86,7 +86,7 @@ int timeprocess_set_time(const struct rtc_time *time)
     return ret;
 }
 
-/* rtc get */
+
 static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
 {
     ARG_UNUSED(argc);
@@ -116,8 +116,7 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
-/* rtc set YYYY-MM-DD HH:MM */
-/* rtc set YYYY-MM-DD HH:MM */
+
 static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 {
     if (argc != 3) {
@@ -129,18 +128,6 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     int hour, minute;
     char dummy_date, dummy_time;
 
-    /* Wir versuchen, die Werte einzulesen UND ein unerwünschtes Nachfolge-Zeichen (dummy) mitzulesen.
-     * Wenn sscanf GENAU 3 Werte beim Datum und GENAU 2 Werte bei der Zeit liefert 
-     * UND KEIN zusätzliches Zeichen am Ende existiert, schlägt der zweite Teil fehl 
-     * ODER wir prüfen die Anzahl der scanf-Erfolge. 
-     * Besser und stabiler: Wir prüfen, ob sscanf genau die Anzahl liefert 
-     * und nutzen einen Punkt/Leerzeichen oder prüfen das Ende direkt. */
-
-    // Sauberer Ansatz ohne %n:
-    // Wir prüfen mit sscanf ob die Zahlen stimmen. Um Müll am Ende abzufangen, 
-    // hängen wir ein %c an und erwarten, dass sscanf DIESES ZEICHEN NICHT finden kann 
-    // (sprich: der String ist hier zu Ende und sscanf gibt für diesen Teil 0 zurück).
-    
     int scanned;
 
     // Datum prüfen: 3 Integers müssen kommen, danach darf nichts mehr kommen
@@ -200,7 +187,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_CMD_REGISTER(rtc, &rtc_commands, "RTC Datum und Uhrzeit", NULL);
+SHELL_CMD_REGISTER(time, &rtc_commands, "RTC Datum und Uhrzeit", NULL);
 
 void timeprocess_thread(void *arg1, void *arg2, void *arg3)
 {
