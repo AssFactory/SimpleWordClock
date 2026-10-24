@@ -9,4 +9,5 @@ target_sources(app PRIVATE
     src/timeprocess/timeprocess.c
     src/ambiente/ambiente.c
     src/display/display.c
+    src/word_map/word_map.c
 )
