@@ -28,6 +28,31 @@ static const struct word_coord word_coords[WORD_COUNT] = {
     [WORD_ZWELFE]      = { 1, 8,  6 },
 };
 
+static const char *const word_names[WORD_COUNT] = {
+    [WORD_S]           = "S",
+    [WORD_ISCH]        = "ISCH",
+    [WORD_GLEI]        = "GLEI",
+    [WORD_FEMF]        = "FEMF",
+    [WORD_ZEHN]        = "ZEHN",
+    [WORD_NACH]        = "NACH",
+    [WORD_VOR]         = "VOR",
+    [WORD_VIERTEL]     = "VIERTEL",
+    [WORD_HALBER]      = "HALBER",
+    [WORD_DREIVIERTEL] = "DREIVIERTEL",
+    [WORD_OISE]        = "OISE",
+    [WORD_ZWOIE]       = "ZWOIE",
+    [WORD_DREIE]       = "DREIE",
+    [WORD_VIERE]       = "VIERE",
+    [WORD_FEMFE]       = "FEMFE",
+    [WORD_SEGGSE]      = "SEGGSE",
+    [WORD_SIEBENE]     = "SIEBENE",
+    [WORD_ACHDE]       = "ACHDE",
+    [WORD_NEINE]       = "NEINE",
+    [WORD_ZEHNE]       = "ZEHNE",
+    [WORD_ELFE]        = "ELFE",
+    [WORD_ZWELFE]      = "ZWELFE",
+};
+
 const struct word_coord *word_map_get(enum word_id id)
 {
     if ((unsigned int)id >= WORD_COUNT) {
@@ -35,4 +60,13 @@ const struct word_coord *word_map_get(enum word_id id)
     }
 
     return &word_coords[id];
+}
+
+const char *word_map_get_name(enum word_id id)
+{
+    if ((unsigned int)id >= WORD_COUNT) {
+        return NULL;
+    }
+
+    return word_names[id];
 }

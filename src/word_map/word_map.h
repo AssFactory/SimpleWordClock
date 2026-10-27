@@ -44,6 +44,7 @@ enum word_id {
 
 /* Gibt bei ungueltiger ID NULL zurueck. */
 const struct word_coord *word_map_get(enum word_id id);
+const char *word_map_get_name(enum word_id id);
 
 #ifdef __cplusplus
 }
