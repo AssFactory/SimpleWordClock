@@ -10,6 +10,10 @@ int display_request_update(void);
 
 int display_led_test(void);
 
+int display_clear_buffer(void);
+
+uint8_t display_scale_brightness(uint16_t lux_val);
+
 int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color);
 
 #endif

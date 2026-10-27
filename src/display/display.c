@@ -14,6 +14,8 @@
 
 #include "display.h"
 #include "../ambiente/ambiente.h"
+#include "../timeprocess/timeprocess.h"
+#include "../word_map/word_map.h"
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
@@ -27,7 +29,7 @@ LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 
 #define SENSOR_MIN_BRIGHTNESS 100
 #define SENSOR_MAX_BRIGHTNESS 3000
-#define LED_STRIP_MIN_BRIGHTNESS 70
+#define LED_STRIP_MIN_BRIGHTNESS 150
 #define LED_STRIP_MAX_BRIGHTNESS 200
 
 #define LED_STRIP_MAX_CURRENT 2500
@@ -124,7 +126,7 @@ int display_init(void)
     return 0;
 }
 
-int display_clear(void)
+int display_clear_buffer(void)
 {
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     if (ret != 0) {
@@ -134,6 +136,16 @@ int display_clear(void)
     memset(pixel_buffer, 0, sizeof(pixel_buffer));
 
     k_mutex_unlock(&pixel_buffer_lock);
+
+    return 0;
+}
+
+int display_clear(void)
+{
+    int ret = display_clear_buffer();
+    if (ret != 0) {
+        return ret;
+    }
 
     return display_request_update();
 }
@@ -208,6 +220,22 @@ static int display_update(void)
         output_pixels[i].r = gamma_table[r];
         output_pixels[i].g = gamma_table[g];
         output_pixels[i].b = gamma_table[b];
+
+        if (output_pixels[i].r != 0U ||
+            output_pixels[i].g != 0U ||
+            output_pixels[i].b != 0U) {
+            LOG_INF("Pixel %zu: Input RGB(%u, %u, %u) -> Brightness-scaled RGB(%u, %u, %u) -> Gamma-corrected RGB(%u, %u, %u)",
+                    i,
+                    (unsigned int)pixel_buffer[i].r,
+                    (unsigned int)pixel_buffer[i].g,
+                    (unsigned int)pixel_buffer[i].b,
+                    (unsigned int)r,
+                    (unsigned int)g,
+                    (unsigned int)b,
+                    (unsigned int)output_pixels[i].r,
+                    (unsigned int)output_pixels[i].g,
+                    (unsigned int)output_pixels[i].b);
+        }
 
         total_pwm_ratio += output_pixels[i].r;
         total_pwm_ratio += output_pixels[i].g;
@@ -289,7 +317,7 @@ static void display_led_test_handler(struct k_work *work)
     };
 
     bool test_failed = false;
-    
+
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     
     if (ret != 0) {
@@ -298,7 +326,12 @@ static void display_led_test_handler(struct k_work *work)
         return;
     }
 
-    display_clear();
+    ret = display_clear_buffer();
+    if (ret != 0) {
+        LOG_ERR("Failed to clear pixel buffer: %d", ret);
+        test_failed = true;
+        goto finished;
+    }
 
     for (uint8_t y = 0; y < DISPLAY_HEIGHT; y++) {
         for (uint8_t x = 0; x < DISPLAY_WIDTH; x++) {
@@ -387,16 +420,116 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
     return ret;
 }
 
-    shell_print(sh, "LED test finished");
-    return 0;
+ret = timeprocess_refresh_display();
+if (ret < 0) {
+    shell_error(sh, "Uhrzeit konnte nach dem LED-Test nicht angezeigt werden: %d",
+                ret);
+    return ret;
+}
+
+shell_print(sh, "LED test finished");
+return 0;
+}
+
+static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const struct led_rgb white = {
+        .r = 255,
+        .g = 255,
+        .b = 255,
+    };
+
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        shell_error(sh, "Pixelpuffer konnte nicht gesperrt werden: %d", ret);
+        return ret;
+    }
+
+    shell_print(sh, "Worttest: jedes Wort wird 1 Sekunde angezeigt.");
+
+    for (int id = 0; id < WORD_COUNT; id++) {
+        const enum word_id word_id = (enum word_id)id;
+        const struct word_coord *coord = word_map_get(word_id);
+        const char *word_name = word_map_get_name(word_id);
+        if (coord == NULL || word_name == NULL) {
+            ret = -EINVAL;
+            shell_error(sh, "Keine Koordinaten fuer Wort-ID %d", id);
+            break;
+        }
+
+        ret = display_clear_buffer();
+        if (ret != 0) {
+            shell_error(sh, "Pixelpuffer konnte nicht geleert werden: %d", ret);
+            break;
+        }
+
+        for (uint8_t offset = 0; offset < coord->len; offset++) {
+            ret = display_set_pixel(coord->x + offset, coord->y, white);
+            if (ret != 0) {
+                shell_error(sh, "Fehler bei %s an x=%u y=%u: %d",
+                            word_name,
+                            (unsigned int)(coord->x + offset),
+                            (unsigned int)coord->y,
+                            ret);
+                break;
+            }
+        }
+
+        if (ret != 0) {
+            break;
+        }
+
+        shell_print(sh, "%s: Start x=%u y=%u, Laenge=%u",
+                    word_name,
+                    (unsigned int)coord->x,
+                    (unsigned int)coord->y,
+                    (unsigned int)coord->len);
+
+        ret = display_update();
+        if (ret < 0) {
+            shell_error(sh, "Display-Update fuer %s fehlgeschlagen: %d",
+                        word_name, ret);
+            break;
+        }
+
+        k_msleep(1000);
+    }
+
+    int clear_ret = display_clear_buffer();
+    if (clear_ret == 0) {
+        clear_ret = display_update();
+    }
+    if (ret == 0 && clear_ret < 0) {
+        ret = clear_ret;
+    }
+
+    k_mutex_unlock(&pixel_buffer_lock);
+
+    int refresh_ret = timeprocess_refresh_display();
+    if (refresh_ret < 0) {
+        shell_error(sh, "Uhrzeit konnte nach dem Worttest nicht angezeigt werden: %d",
+                    refresh_ret);
+        if (ret == 0) {
+            ret = refresh_ret;
+        }
+    }
+
+    if (ret == 0) {
+        shell_print(sh, "Worttest abgeschlossen.");
+    }
+
+    return ret;
 }
 
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
     SHELL_CMD(test, NULL, "Get actual brightness", cmd_led_test),
+    SHELL_CMD(words, NULL, "Alle Woerter einzeln anzeigen", cmd_word_test),
     SHELL_SUBCMD_SET_END
 );
 
 SHELL_CMD_REGISTER(display, &display_commands, "Ambiente functions", NULL);
-
