@@ -3,16 +3,16 @@
 #include <stddef.h>
 
 static const struct word_coord word_coords[WORD_COUNT] = {
-    [WORD_S]           = { 0, 3,  1 },
-    [WORD_ISCH]        = { 0, 5,  4 },
-    [WORD_GLEI]        = { 1, 2,  4 },
-    [WORD_FEMF]        = { 2, 0,  4 },
-    [WORD_ZEHN]        = { 1, 7,  4 },
-    [WORD_NACH]        = { 2, 5,  4 },
-    [WORD_VOR]         = { 2, 9,  3 },
-    [WORD_VIERTEL]     = { 3, 4,  7 },
-    [WORD_HALBER]      = { 4, 0,  6 },
-    [WORD_DREIVIERTEL] = { 0, 4, 11 },
+    [WORD_S]           = { 3, 0,  1 },
+    [WORD_ISCH]        = { 5, 0,  4 },
+    [WORD_GLEI]        = { 2, 1,  4 },
+    [WORD_FEMF]        = { 0, 2,  4 },
+    [WORD_ZEHN]        = { 7, 1,  4 },
+    [WORD_NACH]        = { 5, 2,  4 },
+    [WORD_VOR]         = { 9, 2,  3 },
+    [WORD_VIERTEL]     = { 4, 3,  7 },
+    [WORD_HALBER]      = { 0, 4,  6 },
+    [WORD_DREIVIERTEL] = { 0, 3, 11 },
 
     [WORD_OISE]        = { 0, 6,  4 },
     [WORD_ZWOIE]       = { 7, 4,  5 },
