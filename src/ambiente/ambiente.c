@@ -13,6 +13,8 @@
 
 LOG_MODULE_REGISTER(ambiente, LOG_LEVEL_INF);
 
+#define AMBIENTE_BRIGHTNESS_CHANGE_THRESHOLD 2U
+
 /* BH1750 aus dem Devicetree */
 #define BH1750_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(rohm_bh1750)
 
@@ -115,6 +117,7 @@ SHELL_CMD_REGISTER(ambiente, &ambiente_commands, "Ambiente functions", NULL);
 void ambiente_thread(void *arg1, void *arg2, void *arg3)
 {
     const uint32_t interval_ms = *(const uint32_t *)arg1;
+    uint8_t last_display_brightness = UINT8_MAX;
 
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
@@ -127,12 +130,22 @@ void ambiente_thread(void *arg1, void *arg2, void *arg3)
     }
 
     while (true) {
-        (void)ambiente_read_sensor();
+        int ret = ambiente_read_sensor();
+        if (ret == 0) {
+            uint8_t brightness = display_scale_brightness(ambiente_get_lux());
+            uint8_t difference = brightness > last_display_brightness
+                                     ? brightness - last_display_brightness
+                                     : last_display_brightness - brightness;
 
-        int ret = display_request_update();
-
-        if (ret < 0) {
-            LOG_ERR("Display-Update fehlgeschlagen: %d", ret);
+            if (last_display_brightness == UINT8_MAX ||
+                difference >= AMBIENTE_BRIGHTNESS_CHANGE_THRESHOLD) {
+                ret = display_request_update();
+                if (ret < 0) {
+                    LOG_ERR("Display-Update fehlgeschlagen: %d", ret);
+                } else {
+                    last_display_brightness = brightness;
+                }
+            }
         }
 
         k_msleep(interval_ms);
