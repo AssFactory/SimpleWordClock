@@ -72,6 +72,201 @@ K_MUTEX_DEFINE(time_cache_mutex);
 static struct rtc_time cached_time;
 static bool cached_time_valid;
 
+static bool timeprocess_is_leap_year(int year)
+{
+    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+}
+
+static int timeprocess_days_in_month(int year, int month)
+{
+    static const uint8_t days_per_month[] = {
+        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+    };
+
+    if (month == 1 && timeprocess_is_leap_year(year)) {
+        return 29;
+    }
+
+    return days_per_month[month];
+}
+
+static uint32_t timeprocess_days_before_year(int year)
+{
+    uint32_t days = 0;
+
+    for (int current_year = 2000; current_year < year; current_year++) {
+        days += timeprocess_is_leap_year(current_year) ? 366U : 365U;
+    }
+
+    return days;
+}
+
+static uint32_t timeprocess_days_before_month(int year, int month)
+{
+    uint32_t days = 0;
+
+    for (int current_month = 0; current_month < month; current_month++) {
+        days += (uint32_t)timeprocess_days_in_month(year, current_month);
+    }
+
+    return days;
+}
+
+static int timeprocess_validate_datetime(const struct rtc_time *time)
+{
+    if (time == NULL ||
+        time->tm_year + 1900 < 2000 || time->tm_year + 1900 > 2099 ||
+        time->tm_mon < 0 || time->tm_mon > 11 ||
+        time->tm_mday < 1 ||
+        time->tm_mday > timeprocess_days_in_month(time->tm_year + 1900,
+                                                  time->tm_mon) ||
+        time->tm_hour < 0 || time->tm_hour > 23 ||
+        time->tm_min < 0 || time->tm_min > 59 ||
+        time->tm_sec < 0 || time->tm_sec > 59) {
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+static int timeprocess_datetime_to_seconds(const struct rtc_time *time,
+                                           uint64_t *seconds)
+{
+    int ret = timeprocess_validate_datetime(time);
+    if (ret != 0 || seconds == NULL) {
+        return -EINVAL;
+    }
+
+    int year = time->tm_year + 1900;
+    uint64_t days = timeprocess_days_before_year(year) +
+                    timeprocess_days_before_month(year, time->tm_mon) +
+                    (uint64_t)(time->tm_mday - 1);
+
+    *seconds = days * 86400U + (uint64_t)time->tm_hour * 3600U +
+               (uint64_t)time->tm_min * 60U + (uint64_t)time->tm_sec;
+
+    return 0;
+}
+
+static void timeprocess_seconds_to_datetime(uint64_t seconds,
+                                            struct rtc_time *time)
+{
+    uint32_t days = (uint32_t)(seconds / 86400U);
+    uint32_t seconds_in_day = (uint32_t)(seconds % 86400U);
+    int year = 2000;
+
+    while (days >= (timeprocess_is_leap_year(year) ? 366U : 365U)) {
+        days -= timeprocess_is_leap_year(year) ? 366U : 365U;
+        year++;
+    }
+
+    int yday = (int)days;
+    int month = 0;
+    while (days >= (uint32_t)timeprocess_days_in_month(year, month)) {
+        days -= (uint32_t)timeprocess_days_in_month(year, month);
+        month++;
+    }
+
+    time->tm_year = year - 1900;
+    time->tm_mon = month;
+    time->tm_mday = (int)days + 1;
+    time->tm_hour = (int)(seconds_in_day / 3600U);
+    time->tm_min = (int)((seconds_in_day % 3600U) / 60U);
+    time->tm_sec = (int)(seconds_in_day % 60U);
+    time->tm_wday = (int)(((seconds / 86400U) + 6U) % 7U);
+    time->tm_yday = yday;
+    time->tm_isdst = -1;
+    time->tm_nsec = 0;
+}
+
+static uint64_t timeprocess_dst_transition_utc(int year, int month)
+{
+    uint32_t days_before_month =
+        timeprocess_days_before_year(year) +
+        timeprocess_days_before_month(year, month);
+    int days_in_month = timeprocess_days_in_month(year, month);
+    int weekday_of_last_day =
+        (int)(((uint64_t)days_before_month + (uint64_t)days_in_month - 1U +
+               6U) % 7U);
+    int last_sunday = days_in_month - weekday_of_last_day;
+
+    return ((uint64_t)days_before_month + (uint64_t)(last_sunday - 1)) *
+               86400U +
+           3600U;
+}
+
+static bool timeprocess_is_summer_time_utc(const struct rtc_time *utc_time,
+                                           uint64_t utc_seconds)
+{
+    int year = utc_time->tm_year + 1900;
+    uint64_t summer_time_start = timeprocess_dst_transition_utc(year, 2);
+    uint64_t summer_time_end = timeprocess_dst_transition_utc(year, 9);
+
+    return utc_seconds >= summer_time_start && utc_seconds < summer_time_end;
+}
+
+static int timeprocess_local_to_utc(const struct rtc_time *local_time,
+                                    struct rtc_time *utc_time)
+{
+    int ret = timeprocess_validate_datetime(local_time);
+    if (ret != 0 || utc_time == NULL) {
+        return -EINVAL;
+    }
+
+    int year = local_time->tm_year + 1900;
+    int march_last_sunday =
+        timeprocess_days_in_month(year, 2) -
+        (int)(((uint64_t)timeprocess_days_before_year(year) +
+               timeprocess_days_before_month(year, 2) +
+               (uint64_t)timeprocess_days_in_month(year, 2) - 1U + 6U) %
+              7U);
+
+    if (local_time->tm_mon == 2 &&
+        local_time->tm_mday == march_last_sunday &&
+        local_time->tm_hour == 2) {
+        return -EINVAL;
+    }
+
+    bool summer_time = false;
+    if (local_time->tm_mon > 2 && local_time->tm_mon < 9) {
+        summer_time = true;
+    } else if (local_time->tm_mon == 2) {
+        summer_time = local_time->tm_mday > march_last_sunday ||
+                      (local_time->tm_mday == march_last_sunday &&
+                       local_time->tm_hour >= 3);
+    } else if (local_time->tm_mon == 9) {
+        int october_last_sunday =
+            timeprocess_days_in_month(year, 9) -
+            (int)(((uint64_t)timeprocess_days_before_year(year) +
+                   timeprocess_days_before_month(year, 9) +
+                   (uint64_t)timeprocess_days_in_month(year, 9) - 1U +
+                   6U) %
+                  7U);
+
+        summer_time = local_time->tm_mday < october_last_sunday ||
+                      (local_time->tm_mday == october_last_sunday &&
+                       local_time->tm_hour < 3);
+    }
+
+    uint64_t local_seconds;
+    ret = timeprocess_datetime_to_seconds(local_time, &local_seconds);
+    if (ret != 0) {
+        return ret;
+    }
+
+    uint64_t offset = summer_time ? 7200U : 3600U;
+    if (local_seconds < offset) {
+        return -EINVAL;
+    }
+
+    timeprocess_seconds_to_datetime(local_seconds - offset, utc_time);
+    if (utc_time->tm_year + 1900 < 2000) {
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
 static void timeprocess_cache_update(const struct rtc_time *time)
 {
     k_mutex_lock(&time_cache_mutex, K_FOREVER);
@@ -101,11 +296,28 @@ int timeprocess_get_time(struct rtc_time *time)
 
 static int timeprocess_read_rtc(void)
 {
-    struct rtc_time time;
-    int ret = rtc_get_time(rtc_dev, &time);
+    struct rtc_time utc_time;
+    int ret = rtc_get_time(rtc_dev, &utc_time);
 
     if (ret == 0) {
-        timeprocess_cache_update(&time);
+        /* The DS3231 driver exposes its register's one-based month and weekday. */
+        utc_time.tm_mon--;
+        if (utc_time.tm_wday >= 1 && utc_time.tm_wday <= 7) {
+            utc_time.tm_wday = (utc_time.tm_wday + 6) % 7;
+        }
+
+        uint64_t utc_seconds;
+        ret = timeprocess_datetime_to_seconds(&utc_time, &utc_seconds);
+        if (ret == 0) {
+            bool summer_time =
+                timeprocess_is_summer_time_utc(&utc_time, utc_seconds);
+            struct rtc_time local_time;
+
+            timeprocess_seconds_to_datetime(
+                utc_seconds + (summer_time ? 7200U : 3600U), &local_time);
+            local_time.tm_isdst = summer_time ? 1 : 0;
+            timeprocess_cache_update(&local_time);
+        }
     }
 
     return ret;
@@ -121,7 +333,19 @@ int timeprocess_set_time(const struct rtc_time *time)
         return -ENODEV;
     }
 
-    int ret = rtc_set_time(rtc_dev, time);
+    struct rtc_time utc_time;
+    int ret = timeprocess_local_to_utc(time, &utc_time);
+    if (ret != 0) {
+        return ret;
+    }
+
+    /* The DS3231 driver writes these fields directly to one-based registers. */
+    utc_time.tm_mon++;
+    if (utc_time.tm_wday >= 0 && utc_time.tm_wday <= 6) {
+        utc_time.tm_wday++;
+    }
+
+    ret = rtc_set_time(rtc_dev, &utc_time);
 
     if (ret == 0) {
         /* Refresh the cache immediately instead of waiting for the next thread cycle. */
@@ -213,7 +437,8 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     int ret = timeprocess_set_time(&time);
 
     if (ret < 0) {
-        shell_error(sh, "Failed to set RTC: %d", ret);
+        shell_error(sh, "Failed to set local time (invalid date/time or RTC error): %d",
+                    ret);
         return ret;
     }
 
