@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-/* Startkoordinate (x, y) und Wortlaenge in LEDs. */
+/* Start coordinate (x, y) and word length in LEDs. */
 struct word_coord {
     uint8_t x;
     uint8_t y;
@@ -42,7 +42,7 @@ enum word_id {
     WORD_COUNT
 };
 
-/* Gibt bei ungueltiger ID NULL zurueck. */
+/* Returns NULL for an invalid ID. */
 const struct word_coord *word_map_get(enum word_id id);
 const char *word_map_get_name(enum word_id id);
 

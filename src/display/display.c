@@ -36,7 +36,6 @@ LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 #define LED_STRIP_IDLE_CURRENT 100
 #define LED_MAX_CURRENT_PER_CHANNEL 20
 
-/* Dedicated display work queue */
 #define DISPLAY_WORKQ_STACK_SIZE 2048
 #define DISPLAY_WORKQ_PRIORITY   5
 
@@ -45,20 +44,15 @@ K_THREAD_STACK_DEFINE(display_workq_stack,
 
 static struct k_work_q display_workq;
 
-/* Signal that the LED test has finished */
 K_SEM_DEFINE(led_test_done, 0, 1);
 
-/* Prevent multiple access to pixel buffer */
  K_MUTEX_DEFINE(pixel_buffer_lock);
 
- /* Work handlers */
 static void display_update_handler(struct k_work *work);
 static void display_led_test_handler(struct k_work *work);
 
-/* Internal function declaration */
 static int display_update(void);
 
-/* Work items */
 K_WORK_DEFINE(display_update_work, display_update_handler);
 K_WORK_DEFINE(display_led_test_work, display_led_test_handler);
 
@@ -106,9 +100,6 @@ static const struct device *const led_strip = DEVICE_DT_GET(LED_STRIP_NODE);
 /* Logical pixel buffer and physical output buffer */
 static struct led_rgb pixel_buffer[LED_COUNT];
 
-/*
- * Initialize the display and start its dedicated work queue.
- */
 int display_init(void)
 {
     if (!device_is_ready(led_strip)) {
@@ -150,9 +141,6 @@ int display_clear(void)
     return display_request_update();
 }
 
-/*
- * Execute a normal display update from the display work queue.
- */
 static void display_update_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
@@ -164,10 +152,7 @@ static void display_update_handler(struct k_work *work)
     }
 }
 
-/*
- * Request a normal display update.
- * Multiple requests can be coalesced by the work queue.
- */
+/* Pending display updates can be coalesced by the work queue. */
 int display_request_update(void)
 {
     int ret = k_work_submit_to_queue(&display_workq,
@@ -197,10 +182,6 @@ uint8_t display_scale_brightness(uint16_t lux_val)
     return (uint8_t)scaled;
 }
 
-/*
- * Apply brightness, gamma correction and software current limiting,
- * then transmit the resulting RGB values to the LED strip.
- */
 static int display_update(void)
 {
     static struct led_rgb output_pixels[LED_COUNT];
@@ -275,7 +256,6 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
 
     uint8_t index = led_map[y * DISPLAY_WIDTH + x];
 
-    /* The logical position has no physical LED */
     if (index == NO_LED) {
         return 0;
     }
@@ -297,10 +277,7 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
     return 0;
 }
 
-/*
- * Run the complete LED test inside the display work queue.
- * Always signal completion, including when an error occurs.
- */
+/* Always signal completion so the waiting shell command can resume. */
 static void display_led_test_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
@@ -337,7 +314,6 @@ static void display_led_test_handler(struct k_work *work)
         for (uint8_t x = 0; x < DISPLAY_WIDTH; x++) {
             uint8_t index = led_map[y * DISPLAY_WIDTH + x];
 
-            /* Skip logical positions without a physical LED */
             if (index == NO_LED) {
                 continue;
             }
@@ -387,13 +363,9 @@ finished:
 
     k_mutex_unlock(&pixel_buffer_lock);
 
-    /* Wake the shell command waiting for the test */
     k_sem_give(&led_test_done);
 }
 
-/*
- * Shell command: led_test
- */
 static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
     
     ARG_UNUSED(argc);
@@ -412,7 +384,6 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
         return ret;
     }
 
-    /* Wait until the work handler signals completion */
     ret = k_sem_take(&led_test_done, K_FOREVER);
 
     if (ret != 0) {
@@ -422,7 +393,7 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
 
 ret = timeprocess_refresh_display();
 if (ret < 0) {
-    shell_error(sh, "Uhrzeit konnte nach dem LED-Test nicht angezeigt werden: %d",
+    shell_error(sh, "Failed to refresh the clock after the LED test: %d",
                 ret);
     return ret;
 }
@@ -444,11 +415,11 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     if (ret != 0) {
-        shell_error(sh, "Pixelpuffer konnte nicht gesperrt werden: %d", ret);
+        shell_error(sh, "Failed to lock pixel buffer: %d", ret);
         return ret;
     }
 
-    shell_print(sh, "Worttest: jedes Wort wird 1 Sekunde angezeigt.");
+    shell_print(sh, "Word test: displaying each word for one second.");
 
     for (int id = 0; id < WORD_COUNT; id++) {
         const enum word_id word_id = (enum word_id)id;
@@ -456,20 +427,20 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
         const char *word_name = word_map_get_name(word_id);
         if (coord == NULL || word_name == NULL) {
             ret = -EINVAL;
-            shell_error(sh, "Keine Koordinaten fuer Wort-ID %d", id);
+            shell_error(sh, "No coordinates found for word ID %d", id);
             break;
         }
 
         ret = display_clear_buffer();
         if (ret != 0) {
-            shell_error(sh, "Pixelpuffer konnte nicht geleert werden: %d", ret);
+            shell_error(sh, "Failed to clear pixel buffer: %d", ret);
             break;
         }
 
         for (uint8_t offset = 0; offset < coord->len; offset++) {
             ret = display_set_pixel(coord->x + offset, coord->y, white);
             if (ret != 0) {
-                shell_error(sh, "Fehler bei %s an x=%u y=%u: %d",
+                shell_error(sh, "Failed to set %s at x=%u y=%u: %d",
                             word_name,
                             (unsigned int)(coord->x + offset),
                             (unsigned int)coord->y,
@@ -482,7 +453,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
             break;
         }
 
-        shell_print(sh, "%s: Start x=%u y=%u, Laenge=%u",
+        shell_print(sh, "%s: start x=%u y=%u, length=%u",
                     word_name,
                     (unsigned int)coord->x,
                     (unsigned int)coord->y,
@@ -490,7 +461,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
         ret = display_update();
         if (ret < 0) {
-            shell_error(sh, "Display-Update fuer %s fehlgeschlagen: %d",
+            shell_error(sh, "Display update for %s failed: %d",
                         word_name, ret);
             break;
         }
@@ -510,7 +481,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
     int refresh_ret = timeprocess_refresh_display();
     if (refresh_ret < 0) {
-        shell_error(sh, "Uhrzeit konnte nach dem Worttest nicht angezeigt werden: %d",
+        shell_error(sh, "Failed to refresh the clock after the word test: %d",
                     refresh_ret);
         if (ret == 0) {
             ret = refresh_ret;
@@ -518,7 +489,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
     }
 
     if (ret == 0) {
-        shell_print(sh, "Worttest abgeschlossen.");
+        shell_print(sh, "Word test completed.");
     }
 
     return ret;
@@ -527,9 +498,9 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
-    SHELL_CMD(test, NULL, "Get actual brightness", cmd_led_test),
-    SHELL_CMD(words, NULL, "Alle Woerter einzeln anzeigen", cmd_word_test),
+    SHELL_CMD(test, NULL, "Run LED test", cmd_led_test),
+    SHELL_CMD(words, NULL, "Display each word individually", cmd_word_test),
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_CMD_REGISTER(display, &display_commands, "Ambiente functions", NULL);
+SHELL_CMD_REGISTER(display, &display_commands, "Display controls", NULL);

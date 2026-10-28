@@ -11,11 +11,9 @@
 #include <pico/bootrom.h>
 
 
-/* Thread intervals */
 #define TIMEPROCESS_INTERVAL_MS  1000U
 #define AMBIENTE_INTERVAL_MS     5000U
 
-/* Thread stack sizes */
 #define TIMEPROCESS_STACK_SIZE   1024
 #define AMBIENTE_STACK_SIZE      1024
 
@@ -40,17 +38,16 @@ static int cmd_bootsel(const struct shell *sh, size_t argc, char **argv)
 {
     shell_print(sh, "Rebooting into BOOTSEL/UF2 mode...");
     
-    // Kurze Pause, damit die Shell die Nachricht noch senden kann
+    // Allow time for the shell to send the message before rebooting.
     k_msleep(100); 
 
-    // Parameter 1: GPIO-Maske für LEDs, die im Bootsel-Modus blinken sollen (0 = keine)
-    // Parameter 2: Interface-Auswahl (0 = USB Mass Storage / UF2)
+    // Parameter 1: GPIO mask for LEDs to blink in BOOTSEL mode (0 = none).
+    // Parameter 2: Interface selection (0 = USB mass storage / UF2).
     reset_usb_boot(0, 0); 
     
     return 0;
 }
 
-// Registriert den Top-Level-Befehl "bootsel" in der Zephyr-Shell
 SHELL_CMD_REGISTER(bootsel, NULL, "Reboot into RP2040 BOOTSEL mode", cmd_bootsel);
 
 int main(void)

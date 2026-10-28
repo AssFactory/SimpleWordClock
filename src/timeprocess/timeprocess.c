@@ -62,18 +62,16 @@ static const enum word_id hour_words[12] = {
     WORD_ELFE,
 };
 
-/* Devicetree-Label des DS3231-RTC-Unterknotens */
 #define RTC_NODE DT_NODELABEL(rtc_ext)
 
 static const struct device *const rtc_dev = DEVICE_DT_GET(RTC_NODE);
 
-/* Schützt den zusammengehörigen Zeitstand vor parallelem Zugriff. */
+/* Protects the cached time from concurrent access. */
 K_MUTEX_DEFINE(time_cache_mutex);
 
 static struct rtc_time cached_time;
 static bool cached_time_valid;
 
-/* Übernimmt einen Zeitstand sicher in den Cache. */
 static void timeprocess_cache_update(const struct rtc_time *time)
 {
     k_mutex_lock(&time_cache_mutex, K_FOREVER);
@@ -101,7 +99,6 @@ int timeprocess_get_time(struct rtc_time *time)
     return 0;
 }
 
-/* Liest die RTC direkt und aktualisiert anschließend den Cache. */
 static int timeprocess_read_rtc(void)
 {
     struct rtc_time time;
@@ -127,7 +124,7 @@ int timeprocess_set_time(const struct rtc_time *time)
     int ret = rtc_set_time(rtc_dev, time);
 
     if (ret == 0) {
-        /* Cache sofort aktualisieren, ohne den nächsten Thread-Zyklus abzuwarten. */
+        /* Refresh the cache immediately instead of waiting for the next thread cycle. */
         ret = timeprocess_read_rtc();
     }
 
@@ -144,13 +141,13 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
     int ret = timeprocess_read_rtc();
 
     if (ret < 0) {
-        shell_error(sh, "RTC lesen fehlgeschlagen: %d", ret);
+        shell_error(sh, "Failed to read RTC: %d", ret);
         return ret;
     }
 
     ret = timeprocess_get_time(&time);
     if (ret < 0) {
-        shell_error(sh, "Kein gueltiger Zeitwert verfuegbar.");
+        shell_error(sh, "No valid time value available.");
         return ret;
     }
 
@@ -168,7 +165,7 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
 static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 {
     if (argc != 3) {
-        shell_error(sh, "Verwendung: rtc set YYYY-MM-DD HH:MM");
+        shell_error(sh, "Usage: time set YYYY-MM-DD HH:MM");
         return -EINVAL;
     }
 
@@ -178,27 +175,25 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 
     int scanned;
 
-    // Datum prüfen: 3 Integers müssen kommen, danach darf nichts mehr kommen
     scanned = sscanf(argv[1], "%d-%d-%d%c", &year, &month, &day, &dummy_date);
     if (scanned != 3) {
-        shell_error(sh, "Format-Fehler beim Datum: rtc set 2026-10-21 14:30");
+        shell_error(sh, "Invalid date format. Usage: time set YYYY-MM-DD HH:MM");
         return -EINVAL;
     }
 
-    // Zeit prüfen: 2 Integers müssen kommen, danach darf nichts mehr kommen
     scanned = sscanf(argv[2], "%d:%d%c", &hour, &minute, &dummy_time);
     if (scanned != 2) {
-        shell_error(sh, "Format-Fehler bei der Zeit: rtc set 2026-10-21 14:30");
+        shell_error(sh, "Invalid time format. Usage: time set YYYY-MM-DD HH:MM");
         return -EINVAL;
     }
 
-    /* DS3231 unterstützt hier den Bereich 2000 bis 2099. */
+    /* The DS3231 supports years from 2000 through 2099. */
     if (year < 2000 || year > 2099 ||
         month < 1 || month > 12 ||
         day < 1 || day > 31 ||
         hour < 0 || hour > 23 ||
         minute < 0 || minute > 59) {
-        shell_error(sh, "Datum oder Uhrzeit ausserhalb des gueltigen Bereichs.");
+        shell_error(sh, "Date or time is out of range.");
         return -EINVAL;
     }
 
@@ -218,11 +213,11 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     int ret = timeprocess_set_time(&time);
 
     if (ret < 0) {
-        shell_error(sh, "RTC setzen fehlgeschlagen: %d", ret);
+        shell_error(sh, "Failed to set RTC: %d", ret);
         return ret;
     }
 
-    shell_print(sh, "RTC gesetzt auf %04d-%02d-%02d %02d:%02d",
+    shell_print(sh, "RTC set to %04d-%02d-%02d %02d:%02d",
                 year, month, day, hour, minute);
 
     return 0;
@@ -230,12 +225,12 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     rtc_commands,
-    SHELL_CMD(get, NULL, "Datum und Uhrzeit auslesen", cmd_rtc_get),
-    SHELL_CMD(set, NULL, "Zeit setzen: set YYYY-MM-DD HH:MM", cmd_rtc_set),
+    SHELL_CMD(get, NULL, "Read date and time", cmd_rtc_get),
+    SHELL_CMD(set, NULL, "Set date and time (YYYY-MM-DD HH:MM)", cmd_rtc_set),
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_CMD_REGISTER(time, &rtc_commands, "RTC Datum und Uhrzeit", NULL);
+SHELL_CMD_REGISTER(time, &rtc_commands, "Date and time controls", NULL);
 
 static int timeprocess_set_word(enum word_id id)
 {
@@ -325,10 +320,10 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
 
-    LOG_INF("Start timeprocess thread");
+    LOG_INF("Starting time processing thread");
 
     if (!device_is_ready(rtc_dev)) {
-        LOG_ERR("DS3231 RTC ist nicht bereit");
+        LOG_ERR("DS3231 RTC is not ready");
         return;
     }
 
@@ -336,17 +331,17 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
         int ret = timeprocess_read_rtc();
 
         if (ret < 0) {
-            LOG_WRN("RTC lesen fehlgeschlagen: %d", ret);
+            LOG_WRN("Failed to read RTC: %d", ret);
         } else {
             struct rtc_time time;
 
             ret = timeprocess_get_time(&time);
             if (ret < 0) {
-                LOG_ERR("Zeit-Cache lesen fehlgeschlagen: %d", ret);
+                LOG_ERR("Failed to read time cache: %d", ret);
             } else if (time.tm_hour < 0 || time.tm_hour > 23 ||
                        time.tm_min < 0 || time.tm_min > 59 ||
                        time.tm_sec < 0 || time.tm_sec > 59) {
-                LOG_ERR("RTC lieferte ungueltige Uhrzeit: %02d:%02d:%02d",
+                LOG_ERR("RTC returned an invalid time: %02d:%02d:%02d",
                         time.tm_hour, time.tm_min, time.tm_sec);
             } else {
                 uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
@@ -354,7 +349,7 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
                 if (time.tm_hour != last_hour || slot != last_slot) {
                     ret = timeprocess_render_time(time.tm_hour, slot);
                     if (ret < 0) {
-                        LOG_ERR("Uhrzeit konnte nicht angezeigt werden: %d", ret);
+                        LOG_ERR("Failed to display time: %d", ret);
                     } else {
                         last_hour = time.tm_hour;
                         last_slot = slot;
