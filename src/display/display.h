@@ -31,6 +31,10 @@ int display_clear_buffer(void);
 
 uint8_t display_scale_brightness(uint16_t lux_val);
 
+int display_get_brightness_limits(uint8_t *min, uint8_t *max);
+
+int display_set_brightness_limits(uint8_t min, uint8_t max);
+
 int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color);
 
 #endif

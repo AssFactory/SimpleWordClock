@@ -6,11 +6,13 @@
 #include <zephyr/drivers/led_strip.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/settings/settings.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/util.h>
 
 #include <errno.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "display.h"
@@ -48,6 +50,15 @@ static struct k_work_q display_workq;
 K_SEM_DEFINE(led_test_done, 0, 1);
 
  K_MUTEX_DEFINE(pixel_buffer_lock);
+
+struct display_brightness_limits {
+    uint8_t min;
+    uint8_t max;
+};
+
+static atomic_t brightness_limits =
+    ATOMIC_INIT((LED_STRIP_MAX_BRIGHTNESS << 8) |
+                LED_STRIP_MIN_BRIGHTNESS);
 
 static void display_update_handler(struct k_work *work);
 static void display_led_test_handler(struct k_work *work);
@@ -101,27 +112,51 @@ static const char *const display_color_names[DISPLAY_COLOR_COUNT] = {
 static int display_settings_set(const char *name, size_t len,
                                settings_read_cb read_cb, void *cb_arg)
 {
-    uint8_t stored_color;
+    if (strcmp(name, "color") == 0) {
+        uint8_t stored_color;
 
-    if (strcmp(name, "color") != 0) {
-        return -ENOENT;
+        if (len != sizeof(stored_color)) {
+            return -EINVAL;
+        }
+
+        ssize_t bytes_read = read_cb(cb_arg, &stored_color,
+                                     sizeof(stored_color));
+        if (bytes_read != sizeof(stored_color)) {
+            return bytes_read < 0 ? (int)bytes_read : -EIO;
+        }
+
+        if (stored_color >= DISPLAY_COLOR_COUNT) {
+            return -EINVAL;
+        }
+
+        selected_color = (enum display_color)stored_color;
+        return 0;
     }
 
-    if (len != sizeof(stored_color)) {
-        return -EINVAL;
+    if (strcmp(name, "brightness") == 0) {
+        struct display_brightness_limits stored_limits;
+
+        if (len != sizeof(stored_limits)) {
+            return -EINVAL;
+        }
+
+        ssize_t bytes_read = read_cb(cb_arg, &stored_limits,
+                                     sizeof(stored_limits));
+        if (bytes_read != sizeof(stored_limits)) {
+            return bytes_read < 0 ? (int)bytes_read : -EIO;
+        }
+
+        if (stored_limits.min > stored_limits.max) {
+            return -EINVAL;
+        }
+
+        atomic_set(&brightness_limits,
+                   ((atomic_val_t)stored_limits.max << 8) |
+                   stored_limits.min);
+        return 0;
     }
 
-    ssize_t bytes_read = read_cb(cb_arg, &stored_color, sizeof(stored_color));
-    if (bytes_read != sizeof(stored_color)) {
-        return bytes_read < 0 ? (int)bytes_read : -EIO;
-    }
-
-    if (stored_color >= DISPLAY_COLOR_COUNT) {
-        return -EINVAL;
-    }
-
-    selected_color = (enum display_color)stored_color;
-    return 0;
+    return -ENOENT;
 }
 
 SETTINGS_STATIC_HANDLER_DEFINE(display, "display", NULL, display_settings_set,
@@ -270,19 +305,58 @@ const char *display_color_name(enum display_color color)
 
 uint8_t display_scale_brightness(uint16_t lux_val)
 {
+    atomic_val_t limits = atomic_get(&brightness_limits);
+    uint8_t min_brightness = (uint8_t)(limits & 0xFF);
+    uint8_t max_brightness = (uint8_t)((limits >> 8) & 0xFF);
+
     if (lux_val <= SENSOR_MIN_BRIGHTNESS) {
-        return LED_STRIP_MIN_BRIGHTNESS;
+        return min_brightness;
     }
     if (lux_val >= SENSOR_MAX_BRIGHTNESS) {
-        return LED_STRIP_MAX_BRIGHTNESS;
+        return max_brightness;
     }
 
     int32_t in_range = SENSOR_MAX_BRIGHTNESS - SENSOR_MIN_BRIGHTNESS;
-    int32_t out_range = LED_STRIP_MAX_BRIGHTNESS - LED_STRIP_MIN_BRIGHTNESS;
+    int32_t out_range = max_brightness - min_brightness;
     
-    int32_t scaled = LED_STRIP_MIN_BRIGHTNESS + (((int32_t)(lux_val - SENSOR_MIN_BRIGHTNESS) * out_range) / in_range);
+    int32_t scaled = min_brightness + (((int32_t)(lux_val - SENSOR_MIN_BRIGHTNESS) * out_range) / in_range);
 
     return (uint8_t)scaled;
+}
+
+int display_get_brightness_limits(uint8_t *min, uint8_t *max)
+{
+    if (min == NULL || max == NULL) {
+        return -EINVAL;
+    }
+
+    atomic_val_t limits = atomic_get(&brightness_limits);
+    *min = (uint8_t)(limits & 0xFF);
+    *max = (uint8_t)((limits >> 8) & 0xFF);
+    return 0;
+}
+
+int display_set_brightness_limits(uint8_t min, uint8_t max)
+{
+    if (min > max) {
+        return -EINVAL;
+    }
+
+    struct display_brightness_limits new_limits = {
+        .min = min,
+        .max = max,
+    };
+
+    int ret = settings_save_one("display/brightness", &new_limits,
+                                sizeof(new_limits));
+    if (ret != 0) {
+        LOG_ERR("Failed to save display brightness limits: %d", ret);
+        return ret;
+    }
+
+    atomic_set(&brightness_limits,
+               ((atomic_val_t)max << 8) | min);
+    return 0;
 }
 
 static int display_update(void)
@@ -640,6 +714,69 @@ static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
+static int cmd_display_brightness(const struct shell *sh, size_t argc,
+                                 char **argv)
+{
+    if (argc == 1) {
+        uint8_t min;
+        uint8_t max;
+        int ret = display_get_brightness_limits(&min, &max);
+        if (ret != 0) {
+            shell_error(sh, "Failed to get display brightness limits: %d",
+                        ret);
+            return ret;
+        }
+
+        shell_print(sh, "Display brightness PWM range: min=%u max=%u",
+                    (unsigned int)min, (unsigned int)max);
+        return 0;
+    }
+
+    if (argc != 3) {
+        shell_error(sh, "Usage: display brightness [<min> <max>]");
+        return -EINVAL;
+    }
+
+    uint8_t values[2];
+    for (size_t i = 0; i < ARRAY_SIZE(values); i++) {
+        char *end;
+        if (argv[i + 1][0] == '-') {
+            shell_error(sh, "Brightness values must be between 0 and 255");
+            return -EINVAL;
+        }
+
+        errno = 0;
+        unsigned long value = strtoul(argv[i + 1], &end, 10);
+        if (errno != 0 || end == argv[i + 1] || *end != '\0' ||
+            value > UINT8_MAX) {
+            shell_error(sh, "Invalid brightness value '%s'; use 0-255",
+                        argv[i + 1]);
+            return -EINVAL;
+        }
+        values[i] = (uint8_t)value;
+    }
+
+    if (values[0] > values[1]) {
+        shell_error(sh, "Minimum brightness must not exceed maximum");
+        return -EINVAL;
+    }
+
+    int ret = display_set_brightness_limits(values[0], values[1]);
+    if (ret != 0) {
+        shell_error(sh, "Failed to save display brightness limits: %d", ret);
+        return ret;
+    }
+
+    ret = display_request_update();
+    if (ret < 0) {
+        shell_error(sh, "Failed to update display: %d", ret);
+        return ret;
+    }
+
+    shell_print(sh, "Display brightness PWM range set to min=%u max=%u",
+                (unsigned int)values[0], (unsigned int)values[1]);
+    return 0;
+}
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
@@ -647,6 +784,9 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
     SHELL_CMD(words, NULL, "Display each word individually", cmd_word_test),
     SHELL_CMD_ARG(color, NULL, "Show or set the global display color",
                   cmd_display_color, 0, 1),
+    SHELL_CMD_ARG(brightness, NULL,
+                  "Show or set the minimum and maximum PWM brightness (0-255)",
+                  cmd_display_brightness, 0, 2),
     SHELL_SUBCMD_SET_END
 );
 

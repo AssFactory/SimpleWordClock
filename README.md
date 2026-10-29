@@ -15,6 +15,20 @@ Designed for high-precision timekeeping, automatic brightness adjustment, and ad
 * **Addressable LED Matrix:** Driven by **WS2812B** RGB LEDs (60 LEDs/m density).
 * **Robust Firmware:** Built on **Zephyr RTOS 4.4.2**.
 
+### Brightness controls
+
+The minimum and maximum LED PWM brightness can be read and configured through
+the serial shell. Values range from 0 to 255, and the settings are saved across
+reboots:
+
+```text
+display brightness
+display brightness 50 200
+```
+
+The first command displays the current limits; the second sets the minimum and
+maximum PWM values.
+
 ---
 
 ## 🖨️ 3D Printed Parts & Enclosure
