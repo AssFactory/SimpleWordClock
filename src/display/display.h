@@ -4,9 +4,26 @@
 #include <stdint.h>
 #include <zephyr/drivers/led_strip.h>
 
+enum display_color {
+    DISPLAY_COLOR_WHITE,
+    DISPLAY_COLOR_RED,
+    DISPLAY_COLOR_BLUE,
+    DISPLAY_COLOR_GREEN,
+    DISPLAY_COLOR_CYAN,
+    DISPLAY_COLOR_YELLOW,
+    DISPLAY_COLOR_MAGENTA,
+    DISPLAY_COLOR_COUNT
+};
+
 int display_init(void);
 
 int display_request_update(void);
+
+int display_set_color(enum display_color color);
+
+int display_get_color(enum display_color *color);
+
+const char *display_color_name(enum display_color color);
 
 int display_led_test(void);
 

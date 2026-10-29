@@ -5,6 +5,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/led_strip.h>
 #include <zephyr/shell/shell.h>
+#include <zephyr/settings/settings.h>
 #include <zephyr/sys/util.h>
 
 #include <errno.h>
@@ -99,12 +100,74 @@ static const struct device *const led_strip = DEVICE_DT_GET(LED_STRIP_NODE);
 
 /* Logical pixel buffer and physical output buffer */
 static struct led_rgb pixel_buffer[LED_COUNT];
+static enum display_color selected_color = DISPLAY_COLOR_WHITE;
+
+static const struct led_rgb display_colors[DISPLAY_COLOR_COUNT] = {
+    [DISPLAY_COLOR_WHITE] = { .r = 255, .g = 255, .b = 255 },
+    [DISPLAY_COLOR_RED] = { .r = 255, .g = 0, .b = 0 },
+    [DISPLAY_COLOR_BLUE] = { .r = 0, .g = 0, .b = 255 },
+    [DISPLAY_COLOR_GREEN] = { .r = 0, .g = 255, .b = 0 },
+    [DISPLAY_COLOR_CYAN] = { .r = 0, .g = 255, .b = 255 },
+    [DISPLAY_COLOR_YELLOW] = { .r = 255, .g = 255, .b = 0 },
+    [DISPLAY_COLOR_MAGENTA] = { .r = 255, .g = 0, .b = 255 },
+};
+
+static const char *const display_color_names[DISPLAY_COLOR_COUNT] = {
+    [DISPLAY_COLOR_WHITE] = "white",
+    [DISPLAY_COLOR_RED] = "red",
+    [DISPLAY_COLOR_BLUE] = "blue",
+    [DISPLAY_COLOR_GREEN] = "green",
+    [DISPLAY_COLOR_CYAN] = "cyan",
+    [DISPLAY_COLOR_YELLOW] = "yellow",
+    [DISPLAY_COLOR_MAGENTA] = "magenta",
+};
+
+static int display_settings_set(const char *name, size_t len,
+                               settings_read_cb read_cb, void *cb_arg)
+{
+    uint8_t stored_color;
+
+    if (strcmp(name, "color") != 0) {
+        return -ENOENT;
+    }
+
+    if (len != sizeof(stored_color)) {
+        return -EINVAL;
+    }
+
+    ssize_t bytes_read = read_cb(cb_arg, &stored_color, sizeof(stored_color));
+    if (bytes_read != sizeof(stored_color)) {
+        return bytes_read < 0 ? (int)bytes_read : -EIO;
+    }
+
+    if (stored_color >= DISPLAY_COLOR_COUNT) {
+        return -EINVAL;
+    }
+
+    selected_color = (enum display_color)stored_color;
+    return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(display, "display", NULL, display_settings_set,
+                               NULL, NULL);
 
 int display_init(void)
 {
     if (!device_is_ready(led_strip)) {
         LOG_ERR("LED strip is not ready");
         return -ENODEV;
+    }
+
+    int ret = settings_subsys_init();
+    if (ret != 0) {
+        LOG_ERR("Failed to initialize settings: %d", ret);
+        return ret;
+    }
+
+    ret = settings_load();
+    if (ret != 0) {
+        LOG_ERR("Failed to load display settings: %d", ret);
+        return ret;
     }
 
     k_work_queue_start(&display_workq,
@@ -163,6 +226,70 @@ int display_request_update(void)
     }
 
     return ret;
+}
+
+int display_set_color(enum display_color color)
+{
+    if ((unsigned int)color >= DISPLAY_COLOR_COUNT) {
+        return -EINVAL;
+    }
+
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (selected_color == color) {
+        k_mutex_unlock(&pixel_buffer_lock);
+        return 0;
+    }
+
+    uint8_t stored_color = (uint8_t)color;
+    ret = settings_save_one("display/color", &stored_color,
+                            sizeof(stored_color));
+    if (ret != 0) {
+        k_mutex_unlock(&pixel_buffer_lock);
+        LOG_ERR("Failed to save display color: %d", ret);
+        return ret;
+    }
+
+    selected_color = color;
+    for (size_t i = 0; i < LED_COUNT; i++) {
+        if (pixel_buffer[i].r != 0U || pixel_buffer[i].g != 0U ||
+            pixel_buffer[i].b != 0U) {
+            pixel_buffer[i] = display_colors[selected_color];
+        }
+    }
+
+    k_mutex_unlock(&pixel_buffer_lock);
+    return 0;
+}
+
+int display_get_color(enum display_color *color)
+{
+    if (color == NULL) {
+        return -EINVAL;
+    }
+
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        LOG_ERR("Failed to lock pixel buffer while reading display color: %d",
+                ret);
+        return ret;
+    }
+
+    *color = selected_color;
+    k_mutex_unlock(&pixel_buffer_lock);
+    return 0;
+}
+
+const char *display_color_name(enum display_color color)
+{
+    if ((unsigned int)color >= DISPLAY_COLOR_COUNT) {
+        return "unknown";
+    }
+
+    return display_color_names[color];
 }
 
 uint8_t display_scale_brightness(uint16_t lux_val)
@@ -269,6 +396,10 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
     
     if (ret != 0) {
         return ret;
+    }
+
+    if (color.r != 0U || color.g != 0U || color.b != 0U) {
+        color = display_colors[selected_color];
     }
 
     pixel_buffer[index] = color;
@@ -495,11 +626,58 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
     return ret;
 }
 
+static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
+{
+    if (argc == 1) {
+        enum display_color color;
+        int ret = display_get_color(&color);
+        if (ret != 0) {
+            shell_error(sh, "Failed to get display color: %d", ret);
+            return ret;
+        }
+
+        shell_print(sh, "Current display color: %s",
+                    display_color_name(color));
+        shell_print(sh, "Available colors: white red blue green cyan yellow magenta");
+        return 0;
+    }
+
+    enum display_color color;
+    for (color = DISPLAY_COLOR_WHITE; color < DISPLAY_COLOR_COUNT; color++) {
+        if (strcmp(argv[1], display_color_name(color)) == 0) {
+            break;
+        }
+    }
+
+    if (color == DISPLAY_COLOR_COUNT) {
+        shell_error(sh, "Unknown color '%s'. Available: white red blue green cyan yellow magenta",
+                    argv[1]);
+        return -EINVAL;
+    }
+
+    int ret = display_set_color(color);
+    if (ret != 0) {
+        shell_error(sh, "Failed to set display color: %d", ret);
+        return ret;
+    }
+
+    ret = display_request_update();
+    if (ret < 0) {
+        shell_error(sh, "Failed to update display: %d", ret);
+        return ret;
+    }
+
+    shell_print(sh, "Display color set to %s", display_color_name(color));
+    return 0;
+}
+
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
     SHELL_CMD(test, NULL, "Run LED test", cmd_led_test),
     SHELL_CMD(words, NULL, "Display each word individually", cmd_word_test),
+    SHELL_CMD_ARG(color, NULL, "Show or set the global display color",
+                  cmd_display_color, 0, 1),
     SHELL_SUBCMD_SET_END
 );
 

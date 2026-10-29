@@ -4,6 +4,7 @@
 	chosen {
 		zephyr,console = &cdc_acm_uart0;
 		zephyr,shell-uart = &cdc_acm_uart0;
+		zephyr,settings-partition = &storage_partition;
 	};
 };
 
@@ -64,3 +65,15 @@
     };
 };
 
+&code_partition {
+    reg = <0x100 0x7eff00>;
+};
+
+&flash0 {
+    partitions {
+        storage_partition: partition@7f0000 {
+            label = "storage";
+            reg = <0x7f0000 0x10000>;
+        };
+    };
+};
