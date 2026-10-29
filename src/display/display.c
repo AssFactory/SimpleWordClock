@@ -443,6 +443,37 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
     return 0;
 }
 
+int display_set_pixel_level(uint8_t x, uint8_t y, uint8_t level)
+{
+    if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
+        LOG_ERR("Invalid pixel coordinates (x=%u, y=%u).",
+                (unsigned int)x, (unsigned int)y);
+        return -EINVAL;
+    }
+
+    uint8_t index = led_map[y * DISPLAY_WIDTH + x];
+    if (index == NO_LED) {
+        return 0;
+    }
+    if (index >= LED_COUNT) {
+        LOG_ERR("Invalid LED mapping index (%u).", (unsigned int)index);
+        return -EINVAL;
+    }
+
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        return ret;
+    }
+
+    const struct led_rgb color = display_colors[selected_color];
+    pixel_buffer[index].r = ((uint16_t)color.r * level) / 255U;
+    pixel_buffer[index].g = ((uint16_t)color.g * level) / 255U;
+    pixel_buffer[index].b = ((uint16_t)color.b * level) / 255U;
+
+    k_mutex_unlock(&pixel_buffer_lock);
+    return 0;
+}
+
 /* Always signal completion so the waiting shell command can resume. */
 static void display_led_test_handler(struct k_work *work)
 {

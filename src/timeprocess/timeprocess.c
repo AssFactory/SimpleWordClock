@@ -72,6 +72,20 @@ K_MUTEX_DEFINE(time_cache_mutex);
 static struct rtc_time cached_time;
 static bool cached_time_valid;
 
+#define TIME_DISPLAY_WIDTH 12U
+#define TIME_DISPLAY_HEIGHT 10U
+#define TIME_SWEEP_STEP_MS 70U
+#define TIME_SWEEP_FADE_IN_FIRST 32U
+#define TIME_SWEEP_FADE_IN_SECOND 64U
+#define TIME_SWEEP_FADE_IN_THIRD 112U
+#define TIME_SWEEP_FADE_IN_FOURTH 176U
+#define TIME_SWEEP_FADE_IN_FIFTH 232U
+#define TIME_SWEEP_FADE_OUT_FIRST 24U
+#define TIME_SWEEP_FADE_OUT_SECOND 64U
+#define TIME_SWEEP_FADE_OUT_THIRD 112U
+#define TIME_SWEEP_FADE_OUT_FOURTH 176U
+#define TIME_SWEEP_FADE_OUT_FIFTH 232U
+
 static bool timeprocess_is_leap_year(int year)
 {
     return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
@@ -457,60 +471,174 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 
 SHELL_CMD_REGISTER(time, &rtc_commands, "Date and time controls", NULL);
 
-static int timeprocess_set_word(enum word_id id)
+static int timeprocess_add_word_to_frame(
+    enum word_id id, uint8_t frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH])
 {
     const struct word_coord *coord = word_map_get(id);
     if (coord == NULL) {
         return -EINVAL;
     }
 
-    const struct led_rgb color = {
-        .r = 255,
-        .g = 255,
-        .b = 255,
-    };
-
     for (uint8_t offset = 0; offset < coord->len; offset++) {
-        int ret = display_set_pixel(coord->x + offset, coord->y, color);
-        if (ret != 0) {
-            return ret;
+        uint8_t x = coord->x + offset;
+        if (x >= TIME_DISPLAY_WIDTH || coord->y >= TIME_DISPLAY_HEIGHT) {
+            return -EINVAL;
         }
+
+        frame[coord->y][x] = 1U;
     }
 
     return 0;
 }
 
-static int timeprocess_render_time(int hour, uint8_t slot)
+static int timeprocess_build_time_frame(
+    int hour, uint8_t slot,
+    uint8_t frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH])
 {
-    const struct time_phrase *phrase = &time_phrases[slot];
-    uint8_t display_hour = (uint8_t)(hour % 12);
-    int ret = display_clear_buffer();
+    memset(frame, 0, TIME_DISPLAY_HEIGHT * TIME_DISPLAY_WIDTH);
 
-    if (ret != 0) {
-        return ret;
-    }
-
-    ret = timeprocess_set_word(WORD_S);
+    int ret = timeprocess_add_word_to_frame(WORD_S, frame);
     if (ret == 0) {
-        ret = timeprocess_set_word(WORD_ISCH);
+        ret = timeprocess_add_word_to_frame(WORD_ISCH, frame);
     }
 
+    const struct time_phrase *phrase = &time_phrases[slot];
     for (uint8_t i = 0; ret == 0 && i < phrase->count; i++) {
-        ret = timeprocess_set_word(phrase->words[i]);
+        ret = timeprocess_add_word_to_frame(phrase->words[i], frame);
     }
 
+    uint8_t display_hour = (uint8_t)(hour % 12);
     if (slot >= 5) {
         display_hour = (uint8_t)((display_hour + 1U) % 12U);
     }
 
     if (ret == 0) {
-        ret = timeprocess_set_word(hour_words[display_hour]);
+        ret = timeprocess_add_word_to_frame(hour_words[display_hour], frame);
     }
+    return ret;
+}
+
+static uint8_t timeprocess_sweep_level(
+    uint8_t old_frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH],
+    uint8_t new_frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH],
+    uint8_t x, uint8_t y, int sweep_x)
+{
+    bool was_lit = old_frame[y][x] != 0U;
+    bool should_be_lit = new_frame[y][x] != 0U;
+    int distance = sweep_x - x;
+
+    if (distance >= 0) {
+        if (was_lit && should_be_lit) {
+            return UINT8_MAX;
+        }
+        if (!should_be_lit) {
+            return 0U;
+        }
+
+        if (distance == 0) {
+            return TIME_SWEEP_FADE_IN_FIRST;
+        }
+        if (distance == 1) {
+            return TIME_SWEEP_FADE_IN_SECOND;
+        }
+        if (distance == 2) {
+            return TIME_SWEEP_FADE_IN_THIRD;
+        }
+        if (distance == 3) {
+            return TIME_SWEEP_FADE_IN_FOURTH;
+        }
+        if (distance == 4) {
+            return TIME_SWEEP_FADE_IN_FIFTH;
+        }
+        return UINT8_MAX;
+    }
+
+    int ahead = -distance;
+    if (was_lit && should_be_lit) {
+        return UINT8_MAX;
+    }
+    if (was_lit) {
+        if (ahead == 1) {
+            return TIME_SWEEP_FADE_OUT_FIRST;
+        }
+        if (ahead == 2) {
+            return TIME_SWEEP_FADE_OUT_SECOND;
+        }
+        if (ahead == 3) {
+            return TIME_SWEEP_FADE_OUT_THIRD;
+        }
+        if (ahead == 4) {
+            return TIME_SWEEP_FADE_OUT_FOURTH;
+        }
+        if (ahead == 5) {
+            return TIME_SWEEP_FADE_OUT_FIFTH;
+        }
+        return UINT8_MAX;
+    }
+
+    return 0U;
+}
+
+static int timeprocess_render_time(int hour, uint8_t slot, bool animate,
+                                   int previous_hour, uint8_t previous_slot)
+{
+    uint8_t old_frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH];
+    uint8_t new_frame[TIME_DISPLAY_HEIGHT][TIME_DISPLAY_WIDTH];
+    int ret = timeprocess_build_time_frame(hour, slot, new_frame);
     if (ret != 0) {
         return ret;
     }
 
-    return display_request_update();
+    if (animate) {
+        ret = timeprocess_build_time_frame(previous_hour, previous_slot,
+                                           old_frame);
+        if (ret != 0) {
+            return ret;
+        }
+
+        for (int sweep_x = 0;
+             sweep_x < TIME_DISPLAY_WIDTH + 3;
+             sweep_x++) {
+            for (uint8_t y = 0; y < TIME_DISPLAY_HEIGHT; y++) {
+                for (uint8_t x = 0; x < TIME_DISPLAY_WIDTH; x++) {
+                    uint8_t level =
+                        timeprocess_sweep_level(old_frame, new_frame,
+                                                x, y, sweep_x);
+                    ret = display_set_pixel_level(x, y, level);
+                    if (ret != 0) {
+                        return ret;
+                    }
+                }
+            }
+
+            ret = display_request_update();
+            if (ret < 0) {
+                return ret;
+            }
+            k_msleep(TIME_SWEEP_STEP_MS);
+        }
+    } else {
+        ret = display_clear_buffer();
+        if (ret != 0) {
+            return ret;
+        }
+        for (uint8_t y = 0; y < TIME_DISPLAY_HEIGHT; y++) {
+            for (uint8_t x = 0; x < TIME_DISPLAY_WIDTH; x++) {
+                ret = display_set_pixel_level(
+                    x, y, new_frame[y][x] != 0U ? UINT8_MAX : 0U);
+                if (ret != 0) {
+                    return ret;
+                }
+            }
+        }
+
+        ret = display_request_update();
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
+    return 0;
 }
 
 int timeprocess_refresh_display(void)
@@ -533,7 +661,7 @@ int timeprocess_refresh_display(void)
     }
 
     uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
-    return timeprocess_render_time(time.tm_hour, slot);
+    return timeprocess_render_time(time.tm_hour, slot, false, 0, 0);
 }
 
 void timeprocess_thread(void *arg1, void *arg2, void *arg3)
@@ -572,7 +700,9 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
                 uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
 
                 if (time.tm_hour != last_hour || slot != last_slot) {
-                    ret = timeprocess_render_time(time.tm_hour, slot);
+                    ret = timeprocess_render_time(time.tm_hour, slot,
+                                                  last_hour >= 0, last_hour,
+                                                  (uint8_t)last_slot);
                     if (ret < 0) {
                         LOG_ERR("Could not display the time (error %d).", ret);
                     } else {

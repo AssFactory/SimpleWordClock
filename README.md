@@ -11,6 +11,7 @@ Designed for high-precision timekeeping, automatic brightness adjustment, and ad
 * **Swabian Dialect Matrix:** Unique layout displaying time in authentic Swabian phrasing.
 * **Hardware Flexible (Zephyr RTOS):** Highly portable across various microcontrollers (ESP32, STM32, NXP, etc.) thanks to Zephyr's Devicetree abstraction.
 * **Automated Brightness:** Features a **BH1750** ambient light sensor to seamlessly adjust LED brightness according to room lighting.
+* **Animated Word Changes:** A virtual vertical sweep replaces the old phrase letter by letter, with no visible bar and soft fades on changing letters.
 * **Precise Timekeeping:** High-precision **DS3231 RTC** module with battery backup ensures reliable timekeeping across power interruptions.
 * **Addressable LED Matrix:** Driven by **WS2812B** RGB LEDs (60 LEDs/m density).
 * **Robust Firmware:** Built on **Zephyr RTOS 4.4.2**.
