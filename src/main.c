@@ -1,6 +1,6 @@
 
 #include <zephyr/kernel.h>
-#include <zephyr/sys/printk.h>
+#include <zephyr/logging/log.h>
 #include <errno.h>
 #include <stdint.h>
 
@@ -10,6 +10,7 @@
 #include <zephyr/shell/shell.h>
 #include <pico/bootrom.h>
 
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 #define TIMEPROCESS_INTERVAL_MS  1000U
 #define AMBIENTE_INTERVAL_MS     5000U
@@ -36,7 +37,7 @@ static const uint32_t ambiente_interval_ms =
 
 static int cmd_bootsel(const struct shell *sh, size_t argc, char **argv)
 {
-    shell_print(sh, "Rebooting into BOOTSEL/UF2 mode...");
+    shell_print(sh, "Rebooting into BOOTSEL/UF2 mode.");
     
     // Allow time for the shell to send the message before rebooting.
     k_msleep(100); 
@@ -55,7 +56,7 @@ int main(void)
     int ret = display_init();
 
     if (ret < 0) {
-        printk("Display initialization failed: %d\n", ret);
+        LOG_ERR("Could not initialize the display (error %d).", ret);
         return ret;
     }
 
@@ -73,7 +74,7 @@ int main(void)
     );
 
     if (!tid) {
-        printk("Failed to create timeprocess thread\n");
+        LOG_ERR("Could not create the time-processing thread.");
         return -EAGAIN;
     }
 
@@ -93,7 +94,7 @@ int main(void)
     );
 
     if (!tid) {
-        printk("Failed to create ambiente thread\n");
+        LOG_ERR("Could not create the ambient-light thread.");
         return -EAGAIN;
     }
 

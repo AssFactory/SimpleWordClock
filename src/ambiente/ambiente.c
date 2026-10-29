@@ -27,19 +27,20 @@ static int ambiente_read_sensor(void)
     struct sensor_value value;
 
     if (!device_is_ready(bh1750)) {
-        LOG_ERR("BH1750 is not ready");
+        LOG_ERR("BH1750 sensor is not ready.");
         return -ENODEV;
     }
 
     int ret = sensor_sample_fetch(bh1750);
     if (ret < 0) {
-        LOG_ERR("BH1750: Failed to fetch sample: %d", ret);
+        LOG_ERR("Could not fetch a BH1750 sample (error %d).", ret);
         return ret;
     }
 
     ret = sensor_channel_get(bh1750, SENSOR_CHAN_LIGHT, &value);
     if (ret < 0) {
-        LOG_ERR("BH1750: Failed to read illuminance: %d", ret);
+        LOG_ERR("Could not read illuminance from the BH1750 (error %d).",
+                ret);
         return ret;
     }
 
@@ -56,7 +57,7 @@ static int ambiente_read_sensor(void)
 
     atomic_set(&lux_value, (atomic_val_t)lux);
 
-    LOG_DBG("Ambient illuminance: %d lx", (int)lux);
+    LOG_DBG("Ambient illuminance: %d lx.", (int)lux);
 
     return 0;
 }
@@ -82,7 +83,7 @@ static int cmd_lux(const struct shell *shell,
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    shell_print(shell, "Ambient illuminance: %u lx",
+    shell_print(shell, "Ambient illuminance: %u lx.",
                 (unsigned int)ambiente_get_lux());
 
     return 0;
@@ -104,10 +105,10 @@ void ambiente_thread(void *arg1, void *arg2, void *arg3)
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
 
-    LOG_INF("Ambient light thread started");
+    LOG_INF("Ambient-light thread started.");
 
     if (!device_is_ready(bh1750)) {
-        LOG_ERR("BH1750 is not ready");
+        LOG_ERR("BH1750 sensor is not ready.");
         return;
     }
 
@@ -123,7 +124,7 @@ void ambiente_thread(void *arg1, void *arg2, void *arg3)
                 difference >= AMBIENTE_BRIGHTNESS_CHANGE_THRESHOLD) {
                 ret = display_request_update();
                 if (ret < 0) {
-                    LOG_ERR("Display update failed: %d", ret);
+                    LOG_ERR("Could not update the display (error %d).", ret);
                 } else {
                     last_display_brightness = brightness;
                 }

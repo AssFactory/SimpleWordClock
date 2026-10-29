@@ -182,6 +182,92 @@
   }
   .backcover { background: #f2f4f5; }
   .backcover .contact-line { height: 7mm; border-bottom: .3mm solid #aeb8bd; }
+  .back-cover {
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 0;
+    background: #f2f4f5;
+    color: var(--ink);
+    text-align: center;
+  }
+  .back-cover::after {
+    content: none;
+  }
+  .back-cover .clock-art {
+    width: 64mm;
+    height: 64mm;
+    align-self: center;
+    margin: 0;
+    border-color: #84929a;
+    background: radial-gradient(circle, #35434c 0 60%, transparent 60.5%);
+  }
+  .back-cover .clock-art::before { inset: 8mm; }
+  .back-cover .clock-art::after { inset: 16mm; }
+  .back-cover .clock-art b {
+    top: 29mm;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .back-cover .cover-label {
+    margin: 0;
+    color: var(--muted);
+  }
+  .back-cover .back-link {
+    margin: 0;
+    color: var(--muted);
+    font-size: 7pt;
+  }
+  .toc-list {
+    margin: 5mm 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .toc-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    margin: 0;
+    padding: 2.8mm 0;
+    border-bottom: .25mm solid var(--line);
+  }
+  .toc-list li span:last-child {
+    min-width: 8mm;
+    color: var(--accent);
+    font-weight: 700;
+    text-align: right;
+  }
+  .terminal-settings p { margin-bottom: 1.2mm; }
+  .terminal-settings p:last-child { margin-bottom: 0; }
+  .connector-diagram {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 2mm 0 1mm;
+  }
+  .connector-legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .connector-legend li {
+    display: flex;
+    align-items: baseline;
+    gap: 2mm;
+    margin: 1.2mm 0;
+  }
+  .connector-number {
+    display: inline-flex;
+    flex: 0 0 5mm;
+    width: 5mm;
+    height: 5mm;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--ink);
+    color: white;
+    font-size: 7pt;
+    font-weight: 700;
+  }
   .pill {
     display: inline-block;
     margin: 0 1mm 1mm 0;
@@ -202,26 +288,12 @@
 </head>
 <body>
 
-<!-- Sheet 1, front: page 8 on the left, page 1 on the right. -->
+<!-- Sheet 1, outside: page 12 on the left, front cover on the right. -->
 <section class="sheet">
-  <article class="page backcover">
-    <p class="kicker">Simple Word Clock · Ausgabe 1</p>
-    <h2>Notizen</h2>
-    <p>Hier können Sie eigene Hinweise zur Uhr, zum Aufstellort oder zur Bedienung festhalten.</p>
-    <h3>Eigene Notizen</h3>
-    <div class="contact-line"></div><div class="contact-line"></div>
-    <div class="contact-line"></div><div class="contact-line"></div>
-    <div class="contact-line"></div><div class="contact-line"></div>
-    <div class="contact-line"></div><div class="contact-line"></div>
-    <div class="rule"></div>
-    <h3>Geräteangaben</h3>
-    <p>Aufstellort / Raum:</p><div class="contact-line"></div>
-    <p style="margin-top:3mm">Datum der Inbetriebnahme:</p><div class="contact-line"></div>
-    <div class="box note" style="margin-top:8mm">
-      <p><strong>Dokumenthinweis</strong></p>
-      <p class="small">Diese Anleitung beschreibt die Simple Word Clock (Swabian Edition) anhand des Projektstands. Änderungen an Hardware oder Firmware können die Funktionen beeinflussen.</p>
-    </div>
-    <p class="small" style="margin-top:8mm">Simple Word Clock · Bedienungsanleitung · Ausgabe 1</p>
+  <article class="page cover back-cover">
+    <p class="cover-label">SWABIAN EDITION</p>
+    <div class="clock-art"><b>ES ISCH</b></div>
+    <p class="back-link">github.com/AssFactory/SimpleWordClock</p>
   </article>
   <article class="page cover">
     <div>
@@ -237,10 +309,145 @@
   </article>
 </section>
 
-<!-- Sheet 1, back: pages 2 and 7. -->
+<!-- Sheet 1, inside: pages 2 and 11. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">01 · Sicherheit</p>
+    <p class="kicker">Inhaltsverzeichnis</p>
+    <h2>Schnell gefunden</h2>
+    <p class="lead">Die Anleitung ist als Heft aufgebaut. Seitenzahlen beziehen sich auf die gedruckten Seiten.</p>
+    <ol class="toc-list">
+      <li><span>Shell einrichten und verbinden</span><span>03</span></li>
+      <li><span>Überblick und Inbetriebnahme</span><span>04</span></li>
+      <li><span>Datum und Uhrzeit einstellen</span><span>05</span></li>
+      <li><span>Sensor und Anzeige prüfen</span><span>06</span></li>
+      <li><span>Firmware aktualisieren</span><span>07</span></li>
+      <li><span>Fehlerhilfe</span><span>08</span></li>
+      <li><span>Sicherheit</span><span>09</span></li>
+      <li><span>Pflege und technische Daten</span><span>10</span></li>
+      <li><span>Notizen</span><span>11</span></li>
+    </ol>
+    <div class="box note" style="margin-top:8mm">
+      <p><strong>Schon eingerichtet?</strong></p>
+      <p>Wenn die serielle Shell bereits funktioniert, können Sie Seite 3 überspringen und direkt zum gewünschten Thema gehen.</p>
+    </div>
+    <div class="footer"><span>Inhaltsverzeichnis</span><span>02</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">Notizen</p>
+    <h2>Ihre Geräteangaben</h2>
+    <p>Notieren Sie hier Aufstellort, Inbetriebnahme und eigene Hinweise.</p>
+    <h3>Aufstellort / Raum</h3>
+    <div class="contact-line"></div><div class="contact-line"></div>
+    <h3 style="margin-top:7mm">Inbetriebnahme am</h3>
+    <div class="contact-line"></div>
+    <h3 style="margin-top:7mm">Firmwareversion</h3>
+    <div class="contact-line"></div>
+    <h3 style="margin-top:7mm">Eigene Notizen</h3>
+    <div class="contact-line"></div><div class="contact-line"></div>
+    <div class="contact-line"></div><div class="contact-line"></div>
+    <div class="contact-line"></div><div class="contact-line"></div>
+    <div class="footer"><span>Notizen</span><span>11</span></div>
+  </article>
+</section>
+
+<!-- Sheet 2, outside: pages 10 and 3. -->
+<section class="sheet">
+  <article class="page">
+    <p class="kicker">08 · Pflege und technische Daten</p>
+    <h2>Pflege und technische Daten</h2>
+    <h3>Reinigung</h3>
+    <ol>
+      <li>Netzteil von der Steckdose trennen und die Geräteversorgung abstecken.</li>
+      <li>Gehäuse mit einem weichen, trockenen oder leicht angefeuchteten Tuch abwischen.</li>
+      <li>Keine Lösungsmittel, Scheuermittel oder Flüssigkeit in Öffnungen und Sensorbereiche bringen.</li>
+      <li>Vor dem erneuten Anschließen vollständig trocknen lassen.</li>
+    </ol>
+    <h3>Wartung</h3>
+    <p>Die Uhr benötigt im normalen Betrieb keine regelmäßige Wartung. Prüfen Sie gelegentlich Kabel, Stecker und Gehäuse auf Schäden. Wenn die Uhr nach einem Stromausfall die Zeit verliert, lassen Sie die Pufferbatterie der Echtzeituhr prüfen und gegebenenfalls ersetzen.</p>
+    <h3>Technische Übersicht</h3>
+    <p><span class="pill">Versorgung: 5 V DC</span><span class="pill">Anzeige: LED-Wortmatrix</span><span class="pill">LEDs: 104</span><span class="pill">Sensor: Umgebungslicht</span><span class="pill">Zeit: Echtzeituhr</span></p>
+    <p><span class="pill">Steuerung: Mikrocontroller</span><span class="pill">Service: serielle USB-Konsole</span></p>
+    <p class="small">Die Stromaufnahme hängt von LED-Anzahl, Helligkeit und Anzeigeinhalt ab. Das Netzteil muss passend zur konkreten Ausführung gewählt werden.</p>
+    <h3>Entsorgung</h3>
+    <p>Elektronik und Batterien nicht über den Hausmüll entsorgen. Bitte bei einer geeigneten Sammelstelle abgeben und örtliche Vorschriften beachten.</p>
+    <div class="footer"><span>Pflege & technische Daten</span><span>10</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">01 · Shell einrichten</p>
+    <h2>Serielle Shell verbinden</h2>
+    <div class="box note">
+      <p><strong>Dieser Schritt kann übersprungen werden,</strong> wenn die serielle Shell bereits eingerichtet ist und Sie den Prompt <code>uart:~$</code> sehen.</p>
+    </div>
+    <p>Die Uhr stellt über USB eine einfache Text-Shell bereit. Ein Terminalprogramm am Computer zeigt diese Eingabeaufforderung an und überträgt Ihre Befehle. Es ist keine separate UART-Verkabelung und keine spezielle Uhren-App erforderlich. Die Shell überträgt keine Uhrzeit automatisch.</p>
+    <ol class="steps">
+      <li>Uhr mit einem USB-Datenkabel am Computer anschließen. Ein reines Ladekabel reicht nicht aus. Die vorgesehene 5-V-Versorgung der Uhr ebenfalls anschließen.</li>
+      <li>In PuTTY oder Tera Term als Verbindungstyp <strong>Serial</strong> auswählen. Unter Windows den COM-Port der Uhr im Geräte-Manager ermitteln. Unter macOS/Linux heißt der Port meist <code>/dev/ttyACM0</code> oder ähnlich.</li>
+      <li>Die Verbindungseinstellungen wie im Kasten rechts übernehmen und die Verbindung öffnen.</li>
+      <li>Einmal Enter drücken. Bei der Eingabeaufforderung <code>uart:~$</code> können Sie einen Befehl eingeben und mit Enter absenden.</li>
+    </ol>
+    <div class="box terminal-settings">
+      <p><strong>Serielle Terminal-Einstellungen</strong></p>
+      <p><strong>Verbindung:</strong> Serial (nicht SSH)</p>
+      <p><strong>Port:</strong> COM-Port der Uhr bzw. <code>/dev/ttyACM…</code></p>
+      <p><strong>Baudrate:</strong> 115200 · <strong>Datenbits:</strong> 8</p>
+      <p><strong>Parität:</strong> Keine · <strong>Stoppbits:</strong> 1</p>
+      <p><strong>Flusssteuerung:</strong> Keine</p>
+    </div>
+    <p class="small">Die USB-Verbindung dient hier als Textkonsole: Sie zeigt die Shell und nimmt Befehle an. Sie ist weder eine automatische Zeitsynchronisierung noch eine allgemeine Dateiübertragung.</p>
+    <div class="footer"><span>Shell einrichten</span><span>03</span></div>
+  </article>
+</section>
+
+<!-- Sheet 2, inside: pages 4 and 9. -->
+<section class="sheet">
+  <article class="page">
+    <p class="kicker">02 · Überblick &amp; Inbetriebnahme</p>
+    <h2>Ihre Wortuhr</h2>
+    <p class="lead">Die Simple Word Clock zeigt die Uhrzeit mit beleuchteten Wörtern in schwäbischer Ausdrucksweise an. Ein Helligkeitssensor passt die Anzeige automatisch an das Umgebungslicht an.</p>
+    <h3>Anschlussseite der Uhr</h3>
+    <svg class="connector-diagram" viewBox="0 0 600 150" role="img" aria-labelledby="connector-title connector-desc">
+      <title id="connector-title">Seitenansicht der Anschlüsse</title>
+      <desc id="connector-desc">Die drei Anschlüsse sind von links nach rechts mit 1, 2 und 3 markiert.</desc>
+      <g fill="none" stroke="#18232b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 12h576v70H12z"/>
+        <path d="M25 25h550M25 70h550" stroke="#596873" stroke-width="2"/>
+        <path d="M220 43h39v20h-39zM226 48h27v10h-27z"/>
+        <circle cx="320" cy="53" r="15"/>
+        <circle cx="320" cy="53" r="7"/>
+        <rect x="375" y="40" width="49" height="27" rx="5"/>
+        <path d="M388 46v15m7-15v15m7-15v15"/>
+        <path d="M240 67v28m80-14v14m80-28v28" stroke-width="2.5"/>
+      </g>
+      <g fill="white" stroke="#18232b" stroke-width="3">
+        <circle cx="240" cy="119" r="17"/>
+        <circle cx="320" cy="119" r="17"/>
+        <circle cx="400" cy="119" r="17"/>
+      </g>
+      <g fill="#18232b" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" text-anchor="middle">
+        <text x="240" y="125">1</text>
+        <text x="320" y="125">2</text>
+        <text x="400" y="125">3</text>
+      </g>
+    </svg>
+    <ol class="connector-legend">
+      <li><span class="connector-number">1</span><span><strong>USB:</strong> Verbindung zum Computer für die Shell.</span></li>
+      <li><span class="connector-number">2</span><span><strong>DC:</strong> Anschluss für die Stromversorgung der Uhr.</span></li>
+      <li><span class="connector-number">3</span><span><strong>Sicherung:</strong> schützt die Stromversorgung; nur durch den passenden Typ ersetzen.</span></li>
+    </ol>
+    <h3>Erste Inbetriebnahme</h3>
+    <ol class="steps">
+      <li>Uhr standsicher und trocken aufstellen. Sensoröffnung nicht verdecken.</li>
+      <li>Netzteil und Verkabelung prüfen; nur die für das Gerät vorgesehene Versorgung verwenden.</li>
+      <li>Die 5-V-Versorgung anschließen. Für Shell-Befehle zusätzlich ein USB-Datenkabel und eine serielle Terminalverbindung verwenden.</li>
+      <li>Uhrzeit prüfen und bei Bedarf einstellen (Seite 5).</li>
+    </ol>
+    <div class="box warning">
+      <p><strong>Wichtig:</strong> USB stellt die Text-Shell bereit und ersetzt nicht die vorgesehene Stromversorgung der Uhr und LEDs.</p>
+    </div>
+    <div class="footer"><span>Überblick & Inbetriebnahme</span><span>04</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">07 · Sicherheit</p>
     <h2>Sicher arbeiten</h2>
     <p class="lead">Lesen Sie die Sicherheitshinweise vor der Inbetriebnahme und bewahren Sie diese Anleitung auf.</p>
     <div class="box warning">
@@ -256,157 +463,102 @@
     </div>
     <ul>
       <li><strong>Vor jedem Gebrauch:</strong> Gehäuse, Kabel und Stecker auf sichtbare Schäden prüfen. Beschädigte Geräte nicht verwenden.</li>
-      <li><strong>Vor dem Öffnen, Reinigen oder Ändern der Verdrahtung:</strong> Netzteil vom Stromnetz trennen und die Geräteversorgung vollständig abstecken.</li>
-      <li><strong>Feuchtigkeit:</strong> Gerät und Netzteil trocken halten. Nur in Innenräumen verwenden; vor Wasser, Spritzern und Kondensation schützen.</li>
-      <li><strong>Wärme und Brandgefahr:</strong> Lüftungsöffnungen freihalten. Gerät und LED-Beleuchtung nicht abdecken oder in der Nähe leicht entzündlicher Materialien betreiben.</li>
-      <li><strong>Netzteil:</strong> Ein Netzteil nicht öffnen. Netzspannungsführende Teile dürfen nur von qualifiziertem Fachpersonal geprüft oder repariert werden.</li>
-      <li><strong>Kinder und Batterien:</strong> Kleinteile und eingesetzte Knopfzellen außerhalb der Reichweite von Kindern aufbewahren. Eine verschluckte Knopfzelle erfordert sofort medizinische Hilfe.</li>
+      <li><strong>Vor dem Öffnen oder Ändern der Verdrahtung:</strong> Netzteil vom Stromnetz trennen und Geräteversorgung vollständig abstecken.</li>
+      <li><strong>Feuchtigkeit:</strong> Gerät und Netzteil trocken halten. Nur in Innenräumen verwenden.</li>
+      <li><strong>Wärme:</strong> Lüftungsöffnungen freihalten. Gerät und LED-Beleuchtung nicht abdecken.</li>
+      <li><strong>Netzteil:</strong> Nicht öffnen. Netzspannungsführende Teile dürfen nur von qualifiziertem Fachpersonal geprüft oder repariert werden.</li>
+      <li><strong>Kinder und Batterien:</strong> Kleinteile und Knopfzellen außerhalb der Reichweite von Kindern aufbewahren. Eine verschluckte Knopfzelle erfordert sofort medizinische Hilfe.</li>
     </ul>
     <div class="box warning">
-      <p class="signal-title">
-        <svg class="warning-icon" viewBox="0 0 24 24" role="img" aria-label="Warnung">
-          <path d="M12 2.5 22 21H2L12 2.5Z" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 8v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-          <circle cx="12" cy="17.5" r="1.25" fill="currentColor"/>
-        </svg>
-        <strong>Bei Rauch, ungewöhnlichem Geruch oder starker Erwärmung</strong>
-      </p>
-      <p>Gerät sofort außer Betrieb nehmen und die Stromversorgung trennen, sofern dies gefahrlos möglich ist. Nicht erneut einschalten. Gerät vor weiterer Nutzung von einer fachkundigen Person prüfen lassen.</p>
+      <p><strong>Bei Rauch, ungewöhnlichem Geruch oder starker Erwärmung:</strong> Gerät sofort außer Betrieb nehmen und die Stromversorgung trennen, sofern dies gefahrlos möglich ist. Nicht erneut einschalten. Vor weiterer Nutzung fachkundig prüfen lassen.</p>
     </div>
     <p class="small">Änderungen an Netzteil, Sicherung oder interner Verdrahtung nur von fachkundigen Personen durchführen lassen.</p>
-    <div class="footer"><span>Simple Word Clock</span><span>02</span></div>
-  </article>
-  <article class="page">
-    <p class="kicker">06 · Pflege und technische Daten</p>
-    <h2>Pflege, Daten & Notizen</h2>
-    <h3>Reinigung</h3>
-    <ol>
-      <li>Netzteil von der Steckdose trennen und Gerät ausschalten, indem die Versorgung getrennt wird.</li>
-      <li>Gehäuse mit einem weichen, trockenen oder leicht angefeuchteten Tuch abwischen.</li>
-      <li>Keine Lösungsmittel, Scheuermittel oder Flüssigkeit in Öffnungen und Sensorbereiche bringen.</li>
-      <li>Vor dem erneuten Anschließen vollständig trocknen lassen.</li>
-    </ol>
-    <h3>Wartung</h3>
-    <p>Die Uhr benötigt im normalen Betrieb keine regelmäßige Wartung. Prüfen Sie gelegentlich Kabel, Stecker und Gehäuse auf Schäden. Wenn die Uhr nach einem Stromausfall die Zeit verliert, lassen Sie die Pufferbatterie der Echtzeituhr prüfen und gegebenenfalls ersetzen.</p>
-    <h3>Technische Übersicht</h3>
-    <p><span class="pill">Versorgung: 5 V DC</span><span class="pill">Anzeige: LED-Wortmatrix</span><span class="pill">LEDs: 104</span><span class="pill">Sensor: Umgebungslicht</span><span class="pill">Zeit: Echtzeituhr</span></p>
-    <p><span class="pill">Steuerung: Mikrocontroller</span><span class="pill">Service: serielle USB-Konsole</span></p>
-    <p class="small">Die Stromaufnahme hängt von LED-Anzahl, Helligkeit und Anzeigeinhalt ab. Sie ist nicht als fester Wert angegeben; das Netzteil muss passend zur konkreten Ausführung gewählt werden.</p>
-    <h3>Entsorgung</h3>
-    <p>Elektronik und Batterien nicht über den Hausmüll entsorgen. Bitte bei einer geeigneten Sammelstelle abgeben und örtliche Vorschriften beachten.</p>
-    <div class="box note">
-      <p><strong>Weiterführende Hilfe</strong></p>
-      <p class="small">Projekt und aktuelle Informationen: github.com/AssFactory/SimpleWordClock</p>
-    </div>
-    <p class="small">Dokument: Bedienungsanleitung · Ausgabe 1 · Oktober 2026</p>
-    <div class="footer"><span>Pflege & technische Daten</span><span>07</span></div>
+    <div class="footer"><span>Sicherheit</span><span>09</span></div>
   </article>
 </section>
 
-<!-- Sheet 2, front: pages 6 and 3. -->
+<!-- Sheet 3, outside: pages 8 and 5. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">05 · Funktionen prüfen</p>
-    <h2>Sensor & Anzeige testen</h2>
-    <h3>Umgebungshelligkeit abfragen</h3>
-    <div class="cmd">ambiente get<span>Gibt die zuletzt gemessene Beleuchtungsstärke in Lux aus.</span></div>
-    <p>Der Sensor erfasst die Helligkeit automatisch etwa alle fünf Sekunden. Die Anzeige passt ihre Helligkeit daran an: bei weniger als etwa 100 lx auf den unteren, bei mehr als etwa 3000 lx auf den oberen eingestellten Wert. Dazwischen wird stufenlos angepasst. Eine zusätzliche Begrenzung schützt die LED-Stromaufnahme.</p>
-    <h3>LED-Test starten</h3>
-    <div class="cmd">display test<span>Schaltet die einzelnen LEDs kurz nacheinander ein.</span></div>
-    <p>Der Test dauert einige Zeit. Danach wird die normale Uhranzeige wiederhergestellt. Während des Tests wird die Uhrzeit weitergeführt.</p>
-    <h3>Wort-Test starten</h3>
-    <div class="cmd">display words<span>Zeigt die Wörter des Zifferblatts einzeln an.</span></div>
-    <p>Nach dem Test kehrt die Anzeige zur aktuellen Uhrzeit zurück.</p>
-    <div class="box note">
-      <p><strong>Hinweis:</strong> Der Helligkeitswert wird von der laufenden Messung aktualisiert. Direkt nach dem Einschalten kann die Abfrage noch den Startwert anzeigen; warten Sie in diesem Fall einige Sekunden und fragen Sie erneut ab.</p>
-    </div>
-    <p class="small">Die Testbefehle sind für die Funktionskontrolle gedacht und verändern keine dauerhaften Einstellungen.</p>
-    <div class="footer"><span>Sensor & Anzeige</span><span>06</span></div>
-  </article>
-  <article class="page">
-    <p class="kicker">02 · Überblick & Inbetriebnahme</p>
-    <h2>Ihre Wortuhr</h2>
-    <p class="lead">Die Simple Word Clock zeigt die Uhrzeit mit beleuchteten Wörtern in schwäbischer Ausdrucksweise an. Ein Helligkeitssensor passt die Anzeige automatisch an das Umgebungslicht an.</p>
-    <h3>Bedienelemente und Baugruppen</h3>
+    <p class="kicker">06 · Fehlerhilfe</p>
+    <h2>Wenn etwas nicht funktioniert</h2>
+    <h3>Kein Shell-Prompt sichtbar</h3>
     <ul>
-      <li><strong>LED-Wortmatrix:</strong> zeigt die Uhrzeit in Worten.</li>
-      <li><strong>Umgebungslichtsensor:</strong> misst die Helligkeit am Aufstellort.</li>
-      <li><strong>Echtzeituhr:</strong> hält Datum und Uhrzeit; eine eingesetzte Pufferbatterie kann den Zeiterhalt bei getrennter Versorgung unterstützen.</li>
-      <li><strong>USB-Anschluss:</strong> Verbindung zum Computer für Servicebefehle über eine serielle Konsole.</li>
-      <li><strong>5-V-Versorgung:</strong> versorgt Elektronik und LED-Streifen.</li>
+      <li>Prüfen, ob das USB-Kabel Daten übertragen kann; ein Ladekabel reicht nicht.</li>
+      <li>Den beim Anstecken neu hinzugekommenen COM-Port bzw. seriellen Geräteport auswählen.</li>
+      <li>Serielle Einstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung. Verbindung neu öffnen und Enter drücken.</li>
     </ul>
-    <h3>Erste Inbetriebnahme</h3>
-    <ol class="steps">
-      <li>Uhr standsicher und trocken aufstellen. Sensoröffnung nicht verdecken.</li>
-      <li>Prüfen, dass Netzteil und Verkabelung unbeschädigt sind und zur 5-V-Ausführung passen.</li>
-      <li>USB-Datenkabel und die vorgesehene 5-V-Versorgung anschließen. Für Shell-Befehle muss der Computer einen seriellen USB-Port erkennen.</li>
-      <li>Nach dem Start die Uhrzeit prüfen und bei Bedarf einstellen (siehe nächste Seite).</li>
-    </ol>
-    <div class="box warning">
-      <p><strong>Wichtig:</strong> Die USB-Verbindung dient der Wartung und ersetzt nicht die separate 5-V-Versorgung des LED-Streifens.</p>
-    </div>
-    <p class="small">Je nach Aufbau können USB und externe Versorgung unterschiedlich ausgeführt sein. Verwenden Sie nur die Anschlüsse und Spannungen, die für Ihr Gerät vorgesehen sind.</p>
-    <div class="footer"><span>Überblick & Inbetriebnahme</span><span>03</span></div>
+    <h3>Uhrzeit stimmt nicht</h3>
+    <p>Mit <strong>time get</strong> prüfen und die Zeit gegebenenfalls neu setzen (Seite 5). Verliert die Uhr die Zeit bei getrennter Versorgung, die Pufferbatterie prüfen lassen.</p>
+    <h3>Anzeige bleibt dunkel</h3>
+    <p>Prüfen, ob die vorgesehene 5-V-Versorgung angeschlossen ist. Bei auffälliger Erwärmung, Geruch oder beschädigten Kabeln sofort abschalten und nicht weiter betreiben.</p>
+    <h3>Hilfe und Versionsangabe</h3>
+    <div class="cmd">app version<span>Zeigt die installierte Firmwareversion an.</span></div>
+    <p>Für eine Fehlermeldung im Projektbereich sind Firmwareversion und eine kurze Beschreibung der beobachteten Symptome hilfreich.</p>
+    <div class="footer"><span>Fehlerhilfe</span><span>08</span></div>
   </article>
-</section>
-
-<!-- Sheet 2, back: pages 4 and 5. -->
-<section class="sheet">
   <article class="page">
     <p class="kicker">03 · Uhrzeit einstellen</p>
     <h2>Datum und Uhrzeit setzen</h2>
-    <p>Datum und Uhrzeit werden über die serielle USB-Konsole eingestellt. Die ausführliche Verbindungseinrichtung ist auf der folgenden Seite beschrieben.</p>
-    <ol class="steps">
-      <li>Gerät per USB-Datenkabel mit dem Computer verbinden.</li>
-      <li>Seriellen USB-Port des Geräts im Terminal öffnen. Falls mehrere Ports angezeigt werden, den beim Anstecken neu hinzugekommenen auswählen.</li>
-      <li>Mit dem folgenden Befehl die aktuelle Zeit auslesen:</li>
-    </ol>
-    <div class="cmd">time get<span>Beispielausgabe: 2026-10-28 07:51</span></div>
-    <p>Zum Einstellen Datum und Uhrzeit im Format Jahr-Monat-Tag und Stunde:Minute eingeben:</p>
-    <div class="cmd">time set 2026-10-28 07:51</div>
-    <p>Ersetzen Sie das Beispiel durch das aktuelle Datum und die aktuelle Ortszeit. Jahr: 2000 bis 2099; Stunde: 00 bis 23; Minute: 00 bis 59. Die Sekunden werden beim Setzen auf 00 gestellt.</p>
+    <p>Öffnen Sie die serielle Shell (Seite 3) und lesen Sie zuerst die gespeicherte Zeit aus:</p>
+    <div class="cmd">time get<span>Zeigt Datum und Uhrzeit der Echtzeituhr.</span></div>
+    <p>Zum Einstellen das aktuelle Datum und die Ortszeit im Format Jahr-Monat-Tag Stunde:Minute eingeben:</p>
     <div class="box">
       <p><strong>Beispiel:</strong> 28. Oktober 2026, 07:51 Uhr</p>
       <p class="cmd" style="margin-bottom:0">time set 2026-10-28 07:51</p>
     </div>
-    <p>Mit <strong>time get</strong> anschließend kontrollieren, ob die Uhrzeit übernommen wurde. Die Zeit läuft danach selbstständig weiter.</p>
+    <p>Jahr: 2000 bis 2099; Stunde: 00 bis 23; Minute: 00 bis 59. Die Sekunden werden beim Setzen auf 00 gestellt. Ersetzen Sie das Beispiel durch das aktuelle Datum und die aktuelle Ortszeit.</p>
+    <p>Die Uhr wechselt in Mitteleuropa automatisch zwischen Winter- und Sommerzeit. Am letzten Sonntag im März gibt es die Ortszeit zwischen 02:00 und 02:59 nicht; am letzten Sonntag im Oktober wird die erste 02-Uhr-Stunde angenommen. Nach dem Aufspielen dieser Firmware die Ortszeit einmal neu setzen; intern speichert die Uhr die Zeit in UTC.</p>
+    <p>Mit <strong>time get</strong> kontrollieren, ob die Einstellung übernommen wurde. Die Uhr läuft danach selbstständig weiter.</p>
     <div class="box note">
-      <p><strong>Uhr verliert die Zeit?</strong> Falls das Gerät eine Pufferbatterie verwendet, prüfen Sie, ob diese richtig eingesetzt und noch funktionsfähig ist. Beachten Sie die Kennzeichnung am Gerät.</p>
+      <p><strong>Uhr verliert die Zeit?</strong> Falls das Gerät eine Pufferbatterie verwendet, prüfen Sie, ob sie richtig eingesetzt und funktionsfähig ist. Beachten Sie die Kennzeichnung am Gerät.</p>
     </div>
-    <div class="footer"><span>Uhrzeit einstellen</span><span>04</span></div>
-  </article>
-  <article class="page">
-    <p class="kicker">04 · Shell-Befehle</p>
-    <h2>Serielle Konsole verbinden</h2>
-    <p>Über die USB-Konsole können Sie Datum und Uhrzeit einstellen und Servicebefehle eingeben. Die Uhr muss zusätzlich über ihre vorgesehene 5-V-Versorgung betrieben werden; USB dient der Datenverbindung.</p>
-    <ol class="steps">
-      <li><strong>Gerät versorgen:</strong> Die vorgesehene 5-V-Versorgung anschließen. USB dient der Konsole und ersetzt nicht die separate Versorgung der LED-Anzeige.</li>
-      <li><strong>Datenkabel anschließen:</strong> Uhr mit einem USB-Datenkabel am Computer verbinden. Ein reines Ladekabel funktioniert nicht.</li>
-      <li><strong>Port ermitteln (Windows):</strong> Geräte-Manager öffnen und „Anschlüsse (COM &amp; LPT)“ ansehen. USB-Kabel kurz abziehen und wieder einstecken. Der neu erscheinende COM-Port, zum Beispiel COM4, gehört zur Uhr.</li>
-      <li><strong>Terminal verbinden:</strong> In PuTTY oder Tera Term „Serial“ auswählen, den COM-Port eintragen und die Verbindung öffnen. Falls Einstellungen abgefragt werden: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit (8-N-1), keine Flusssteuerung.</li>
-      <li><strong>Shell starten:</strong> Einmal Enter drücken. Es erscheint der Prompt <code>uart:~$</code>. Befehl eingeben, erneut Enter drücken und die Rückmeldung im Terminal lesen. Vor dem Abziehen des USB-Kabels die Verbindung schließen.</li>
-    </ol>
-    <p class="small">Auf macOS und Linux erscheint der Port meist als <code>/dev/ttyACM…</code> oder <code>/dev/ttyUSB…</code>. Es handelt sich um eine USB-Konsole; eine separate UART-Verkabelung ist nicht erforderlich.</p>
-    <div class="box note">
-      <p><strong>Keine Eingabeaufforderung?</strong> Prüfen, ob ein USB-Datenkabel verwendet wird und der neu hinzugekommene COM-Port ausgewählt ist. Terminalverbindung schließen, neu öffnen und Enter drücken. Nach einem Neustart die Konsole erneut verbinden.</p>
-    </div>
-    <h3>Firmwareversion abfragen</h3>
-    <div class="cmd">app version<span>Gibt die installierte Firmwareversion aus, zum Beispiel 1.0.0.</span></div>
-    <h3>Bootloader-Modus</h3>
-    <div class="cmd">bootsel<span>Gerät in den Bootloader-Modus neu starten.</span></div>
-    <div class="box warning">
-      <p class="signal-title">
-        <svg class="warning-icon" viewBox="0 0 24 24" role="img" aria-label="Achtung">
-          <path d="M12 2.5 22 21H2L12 2.5Z" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 8v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-          <circle cx="12" cy="17.5" r="1.25" fill="currentColor"/>
-        </svg>
-        <strong>ACHTUNG · Bootloader</strong>
-      </p>
-      <p><code>bootsel</code> unterbricht den Uhrenbetrieb. Nur verwenden, wenn das Gerät anschließend über USB gewartet oder neu bespielt werden soll.</p>
-    </div>
-    <div class="footer"><span>Serielle Konsole &amp; Service</span><span>05</span></div>
+    <div class="footer"><span>Uhrzeit einstellen</span><span>05</span></div>
   </article>
 </section>
+
+<!-- Sheet 3, inside: pages 6 and 7. -->
+<section class="sheet">
+  <article class="page">
+    <p class="kicker">04 · Sensor & Anzeige prüfen</p>
+    <h2>Funktionen testen</h2>
+    <h3>Umgebungshelligkeit abfragen</h3>
+    <div class="cmd">ambiente get<span>Gibt die zuletzt gemessene Beleuchtungsstärke in Lux aus.</span></div>
+    <p>Der Sensor misst etwa alle fünf Sekunden. Bei weniger als etwa 100 lx leuchtet die Anzeige mit dem unteren, bei mehr als etwa 3000 lx mit dem oberen Helligkeitswert. Dazwischen wird angepasst; eine zusätzliche Begrenzung schützt die LED-Stromaufnahme.</p>
+    <h3>LED-Test</h3>
+    <div class="cmd">display test<span>Schaltet die einzelnen LEDs kurz nacheinander ein.</span></div>
+    <p>Der Test dauert einige Zeit. Danach wird die aktuelle Uhranzeige wiederhergestellt.</p>
+    <h3>Anzeigefarbe einstellen</h3>
+    <div class="cmd">display color<span>Zeigt die aktuelle und alle verfügbaren Farben.</span></div>
+    <div class="cmd">display color cyan<span>Beispiel: stellt die Farbe Cyan ein.</span></div>
+    <p>Verfügbar sind white, red, blue, green, cyan, yellow und magenta. Die Farbe gilt für Uhrzeit, LED-Test und Wort-Test und bleibt auch nach dem Ausschalten gespeichert.</p>
+    <h3>Wort-Test</h3>
+    <div class="cmd">display words<span>Zeigt die Wörter des Zifferblatts einzeln an.</span></div>
+    <p>Nach dem Test kehrt die Anzeige zur Uhrzeit zurück. Die Testbefehle verändern keine dauerhaften Einstellungen.</p>
+    <div class="box note">
+      <p><strong>Hinweis:</strong> Direkt nach dem Einschalten kann der Sensorwert noch dem Startwert entsprechen. Warten Sie einige Sekunden und fragen Sie erneut ab.</p>
+    </div>
+    <div class="footer"><span>Sensor & Anzeige</span><span>06</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">05 · Firmware aktualisieren</p>
+    <h2>Firmware per USB aktualisieren</h2>
+    <p>Für die Aktualisierung benötigen Sie die zur Uhr passende UF2-Datei. Laden Sie sie aus dem Bereich <strong>Releases</strong> des Projektarchivs herunter:</p>
+    <div class="cmd">github.com/AssFactory/SimpleWordClock/releases</div>
+    <ol class="steps">
+      <li>Prüfen Sie, dass die UF2-Datei ausdrücklich für die <strong>Adafruit ItsyBitsy RP2040</strong> vorgesehen ist. Verwenden Sie nur eine vertrauenswürdige Projektversion.</li>
+      <li>Schließen Sie die Uhr mit einem USB-Datenkabel an den Computer an und verbinden Sie die vorgesehene 5-V-Versorgung.</li>
+      <li>Öffnen Sie die serielle Shell und geben Sie <strong>bootsel</strong> ein. Alternativ: USB trennen, BOOTSEL-Taste gedrückt halten und USB wieder anschließen.</li>
+      <li>Der Computer zeigt das Laufwerk <strong>RPI-RP2</strong> an. Kopieren Sie die heruntergeladene UF2-Datei auf dieses Laufwerk.</li>
+      <li>Warten Sie, bis der Kopiervorgang beendet ist und das Laufwerk verschwindet. Die Uhr startet anschließend mit der neuen Firmware neu.</li>
+    </ol>
+    <div class="box warning">
+      <p><strong>Während des Updates:</strong> USB-Kabel und Stromversorgung nicht trennen. Eine falsche Firmwaredatei kann verhindern, dass die Uhr normal startet.</p>
+    </div>
+    <p>Nach dem Neustart können Sie die Shell erneut verbinden und mit <strong>app version</strong> die installierte Version prüfen. Mit <strong>time get</strong> kontrollieren Sie außerdem die Uhrzeit.</p>
+    <div class="footer"><span>Firmware aktualisieren</span><span>07</span></div>
+  </article>
+</section>
+
 </body>
 </html>

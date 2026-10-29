@@ -365,17 +365,17 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
     int ret = timeprocess_read_rtc();
 
     if (ret < 0) {
-        shell_error(sh, "Failed to read RTC: %d", ret);
+        shell_error(sh, "Could not read the RTC (error %d).", ret);
         return ret;
     }
 
     ret = timeprocess_get_time(&time);
     if (ret < 0) {
-        shell_error(sh, "No valid time value available.");
+        shell_error(sh, "No valid time value is available.");
         return ret;
     }
 
-    shell_print(sh, "%04d-%02d-%02d %02d:%02d",
+    shell_print(sh, "Local time: %04d-%02d-%02d %02d:%02d.",
                 time.tm_year + 1900,
                 time.tm_mon + 1,
                 time.tm_mday,
@@ -389,7 +389,7 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
 static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 {
     if (argc != 3) {
-        shell_error(sh, "Usage: time set YYYY-MM-DD HH:MM");
+        shell_error(sh, "Usage: time set YYYY-MM-DD HH:MM.");
         return -EINVAL;
     }
 
@@ -401,13 +401,13 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
 
     scanned = sscanf(argv[1], "%d-%d-%d%c", &year, &month, &day, &dummy_date);
     if (scanned != 3) {
-        shell_error(sh, "Invalid date format. Usage: time set YYYY-MM-DD HH:MM");
+        shell_error(sh, "Invalid date format. Usage: time set YYYY-MM-DD HH:MM.");
         return -EINVAL;
     }
 
     scanned = sscanf(argv[2], "%d:%d%c", &hour, &minute, &dummy_time);
     if (scanned != 2) {
-        shell_error(sh, "Invalid time format. Usage: time set YYYY-MM-DD HH:MM");
+        shell_error(sh, "Invalid time format. Usage: time set YYYY-MM-DD HH:MM.");
         return -EINVAL;
     }
 
@@ -417,7 +417,7 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
         day < 1 || day > 31 ||
         hour < 0 || hour > 23 ||
         minute < 0 || minute > 59) {
-        shell_error(sh, "Date or time is out of range.");
+        shell_error(sh, "The date or time is out of range.");
         return -EINVAL;
     }
 
@@ -437,12 +437,12 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     int ret = timeprocess_set_time(&time);
 
     if (ret < 0) {
-        shell_error(sh, "Failed to set local time (invalid date/time or RTC error): %d",
+        shell_error(sh, "Could not set the local time (error %d).",
                     ret);
         return ret;
     }
 
-    shell_print(sh, "RTC set to %04d-%02d-%02d %02d:%02d",
+    shell_print(sh, "Local time set to %04d-%02d-%02d %02d:%02d.",
                 year, month, day, hour, minute);
 
     return 0;
@@ -545,10 +545,10 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
     ARG_UNUSED(arg2);
     ARG_UNUSED(arg3);
 
-    LOG_INF("Starting time processing thread");
+    LOG_INF("Time-processing thread started.");
 
     if (!device_is_ready(rtc_dev)) {
-        LOG_ERR("DS3231 RTC is not ready");
+        LOG_ERR("DS3231 RTC is not ready.");
         return;
     }
 
@@ -556,17 +556,17 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
         int ret = timeprocess_read_rtc();
 
         if (ret < 0) {
-            LOG_WRN("Failed to read RTC: %d", ret);
+            LOG_WRN("Could not read the RTC (error %d).", ret);
         } else {
             struct rtc_time time;
 
             ret = timeprocess_get_time(&time);
             if (ret < 0) {
-                LOG_ERR("Failed to read time cache: %d", ret);
+                LOG_ERR("Could not read the time cache (error %d).", ret);
             } else if (time.tm_hour < 0 || time.tm_hour > 23 ||
                        time.tm_min < 0 || time.tm_min > 59 ||
                        time.tm_sec < 0 || time.tm_sec > 59) {
-                LOG_ERR("RTC returned an invalid time: %02d:%02d:%02d",
+                LOG_ERR("RTC returned an invalid time (%02d:%02d:%02d).",
                         time.tm_hour, time.tm_min, time.tm_sec);
             } else {
                 uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
@@ -574,7 +574,7 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
                 if (time.tm_hour != last_hour || slot != last_slot) {
                     ret = timeprocess_render_time(time.tm_hour, slot);
                     if (ret < 0) {
-                        LOG_ERR("Failed to display time: %d", ret);
+                        LOG_ERR("Could not display the time (error %d).", ret);
                     } else {
                         last_hour = time.tm_hour;
                         last_slot = slot;

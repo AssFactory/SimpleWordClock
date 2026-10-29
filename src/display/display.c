@@ -165,19 +165,19 @@ SETTINGS_STATIC_HANDLER_DEFINE(display, "display", NULL, display_settings_set,
 int display_init(void)
 {
     if (!device_is_ready(led_strip)) {
-        LOG_ERR("LED strip is not ready");
+        LOG_ERR("LED strip is not ready.");
         return -ENODEV;
     }
 
     int ret = settings_subsys_init();
     if (ret != 0) {
-        LOG_ERR("Failed to initialize settings: %d", ret);
+        LOG_ERR("Could not initialize settings (error %d).", ret);
         return ret;
     }
 
     ret = settings_load();
     if (ret != 0) {
-        LOG_ERR("Failed to load display settings: %d", ret);
+        LOG_ERR("Could not load display settings (error %d).", ret);
         return ret;
     }
 
@@ -187,7 +187,7 @@ int display_init(void)
                        DISPLAY_WORKQ_PRIORITY,
                        NULL);
 
-    LOG_INF("Display initialized");
+    LOG_INF("Display initialized.");
     return 0;
 }
 
@@ -222,7 +222,7 @@ static void display_update_handler(struct k_work *work)
     int ret = display_update();
 
     if (ret < 0) {
-        LOG_ERR("Display update failed: %d", ret);
+        LOG_ERR("Could not update the display (error %d).", ret);
     }
 }
 
@@ -233,7 +233,7 @@ int display_request_update(void)
                                      &display_update_work);
 
     if (ret < 0) {
-        LOG_ERR("Failed to submit display update: %d", ret);
+        LOG_ERR("Could not submit a display update (error %d).", ret);
     }
 
     return ret;
@@ -260,7 +260,7 @@ int display_set_color(enum display_color color)
                             sizeof(stored_color));
     if (ret != 0) {
         k_mutex_unlock(&pixel_buffer_lock);
-        LOG_ERR("Failed to save display color: %d", ret);
+        LOG_ERR("Could not save the display color (error %d).", ret);
         return ret;
     }
 
@@ -284,7 +284,8 @@ int display_get_color(enum display_color *color)
 
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     if (ret != 0) {
-        LOG_ERR("Failed to lock pixel buffer while reading display color: %d",
+        LOG_ERR("Could not lock the pixel buffer to read the display color "
+                "(error %d).",
                 ret);
         return ret;
     }
@@ -350,7 +351,8 @@ int display_set_brightness_limits(uint8_t min, uint8_t max)
     int ret = settings_save_one("display/brightness", &new_limits,
                                 sizeof(new_limits));
     if (ret != 0) {
-        LOG_ERR("Failed to save display brightness limits: %d", ret);
+        LOG_ERR("Could not save the display brightness limits (error %d).",
+                ret);
         return ret;
     }
 
@@ -375,19 +377,6 @@ static int display_update(void)
         output_pixels[i].g = ((uint16_t)pixel_buffer[i].g * brightness) / 255U;
         output_pixels[i].b = ((uint16_t)pixel_buffer[i].b * brightness) / 255U;
 
-        if (output_pixels[i].r != 0U ||
-            output_pixels[i].g != 0U ||
-            output_pixels[i].b != 0U) {
-            LOG_INF("Pixel %zu: Input RGB(%u, %u, %u) -> Output RGB(%u, %u, %u)",
-                    i,
-                    (unsigned int)pixel_buffer[i].r,
-                    (unsigned int)pixel_buffer[i].g,
-                    (unsigned int)pixel_buffer[i].b,
-                    (unsigned int)output_pixels[i].r,
-                    (unsigned int)output_pixels[i].g,
-                    (unsigned int)output_pixels[i].b);
-        }
-
         total_pwm_ratio += output_pixels[i].r;
         total_pwm_ratio += output_pixels[i].g;
         total_pwm_ratio += output_pixels[i].b;
@@ -396,7 +385,10 @@ static int display_update(void)
     uint32_t estimated_led_current = (uint32_t)(LED_STRIP_IDLE_CURRENT + ((uint64_t)total_pwm_ratio * LED_MAX_CURRENT_PER_CHANNEL) / 255U);
 
     if (estimated_led_current > LED_STRIP_MAX_CURRENT) {
-        LOG_WRN("Estimated LED current %u mA exceeds budget %u mA; dimming LEDs", (unsigned int)estimated_led_current, (unsigned int)LED_STRIP_MAX_CURRENT);
+        LOG_WRN("Estimated LED current (%u mA) exceeds the %u mA limit; "
+                "reducing brightness.",
+                (unsigned int)estimated_led_current,
+                (unsigned int)LED_STRIP_MAX_CURRENT);
 
         uint8_t safety_factor = (uint8_t)(((uint64_t)(LED_STRIP_MAX_CURRENT - LED_STRIP_IDLE_CURRENT) * 255U) /(estimated_led_current - LED_STRIP_IDLE_CURRENT));
 
@@ -419,7 +411,7 @@ static int display_update(void)
 int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
 {
     if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
-        LOG_ERR("Invalid pixel coordinates: x=%u y=%u",
+        LOG_ERR("Invalid pixel coordinates (x=%u, y=%u).",
                 (unsigned int)x, (unsigned int)y);
         return -EINVAL;
     }
@@ -431,7 +423,7 @@ int display_set_pixel(uint8_t x, uint8_t y, struct led_rgb color)
     }
 
     if (index >= LED_COUNT) {
-        LOG_ERR("Invalid LED mapping index: %u", (unsigned int)index);
+        LOG_ERR("Invalid LED mapping index (%u).", (unsigned int)index);
         return -EINVAL;
     }
 
@@ -472,14 +464,14 @@ static void display_led_test_handler(struct k_work *work)
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     
     if (ret != 0) {
-        LOG_ERR("Failed to lock pixel buffer: %d", ret);
+        LOG_ERR("Could not lock the pixel buffer (error %d).", ret);
         k_sem_give(&led_test_done);
         return;
     }
 
     ret = display_clear_buffer();
     if (ret != 0) {
-        LOG_ERR("Failed to clear pixel buffer: %d", ret);
+        LOG_ERR("Could not clear the pixel buffer (error %d).", ret);
         test_failed = true;
         goto finished;
     }
@@ -494,7 +486,7 @@ static void display_led_test_handler(struct k_work *work)
 
             ret = display_set_pixel(x, y, white);
             if (ret < 0) {
-                LOG_ERR("Failed to set pixel (%u, %u): %d",
+                LOG_ERR("Could not set pixel (%u, %u) (error %d).",
                         (unsigned int)x, (unsigned int)y, ret);
                 test_failed = true;
                 goto finished;
@@ -502,7 +494,7 @@ static void display_led_test_handler(struct k_work *work)
 
             ret = display_update();
             if (ret < 0) {
-                LOG_ERR("Failed to update display: %d", ret);
+                LOG_ERR("Could not update the display (error %d).", ret);
                 test_failed = true;
                 goto finished;
             }
@@ -511,7 +503,7 @@ static void display_led_test_handler(struct k_work *work)
 
             ret = display_set_pixel(x, y, off);
             if (ret < 0) {
-                LOG_ERR("Failed to clear pixel (%u, %u): %d",
+                LOG_ERR("Could not clear pixel (%u, %u) (error %d).",
                         (unsigned int)x, (unsigned int)y, ret);
                 test_failed = true;
                 goto finished;
@@ -519,7 +511,7 @@ static void display_led_test_handler(struct k_work *work)
 
             ret = display_update();
             if (ret < 0) {
-                LOG_ERR("Failed to update display: %d", ret);
+                LOG_ERR("Could not update the display (error %d).", ret);
                 test_failed = true;
                 goto finished;
             }
@@ -530,9 +522,9 @@ static void display_led_test_handler(struct k_work *work)
 
 finished:
     if (test_failed) {
-        LOG_ERR("LED test failed");
+        LOG_ERR("LED test failed.");
     } else {
-        LOG_INF("LED test completed");
+        LOG_INF("LED test completed.");
     }
 
     k_mutex_unlock(&pixel_buffer_lock);
@@ -545,7 +537,7 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    shell_print(sh, "Starting LED test...");
+    shell_print(sh, "Starting LED test.");
 
     /* Clear a possible leftover completion signal */
     k_sem_reset(&led_test_done);
@@ -554,25 +546,27 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
                                  &display_led_test_work);
 
     if (ret < 0) {
-        LOG_ERR("Failed to submit LED test: %d", ret);
+        LOG_ERR("Could not submit the LED test (error %d).", ret);
         return ret;
     }
 
     ret = k_sem_take(&led_test_done, K_FOREVER);
 
     if (ret != 0) {
-    shell_error(sh, "Failed waiting for LED test: %d", ret);
+    shell_error(sh, "Could not wait for the LED test to finish (error %d).",
+                ret);
     return ret;
 }
 
 ret = timeprocess_refresh_display();
 if (ret < 0) {
-    shell_error(sh, "Failed to refresh the clock after the LED test: %d",
+    shell_error(sh, "Could not refresh the clock after the LED test "
+                "(error %d).",
                 ret);
     return ret;
 }
 
-shell_print(sh, "LED test finished");
+shell_print(sh, "LED test completed.");
 return 0;
 }
 
@@ -589,11 +583,11 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
     if (ret != 0) {
-        shell_error(sh, "Failed to lock pixel buffer: %d", ret);
+        shell_error(sh, "Could not lock the pixel buffer (error %d).", ret);
         return ret;
     }
 
-    shell_print(sh, "Word test: displaying each word for one second.");
+    shell_print(sh, "Starting word test; each word is shown for one second.");
 
     for (int id = 0; id < WORD_COUNT; id++) {
         const enum word_id word_id = (enum word_id)id;
@@ -601,20 +595,21 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
         const char *word_name = word_map_get_name(word_id);
         if (coord == NULL || word_name == NULL) {
             ret = -EINVAL;
-            shell_error(sh, "No coordinates found for word ID %d", id);
+            shell_error(sh, "No coordinates found for word ID %d.", id);
             break;
         }
 
         ret = display_clear_buffer();
         if (ret != 0) {
-            shell_error(sh, "Failed to clear pixel buffer: %d", ret);
+            shell_error(sh, "Could not clear the pixel buffer (error %d).",
+                        ret);
             break;
         }
 
         for (uint8_t offset = 0; offset < coord->len; offset++) {
             ret = display_set_pixel(coord->x + offset, coord->y, white);
             if (ret != 0) {
-                shell_error(sh, "Failed to set %s at x=%u y=%u: %d",
+                shell_error(sh, "Could not set %s at x=%u, y=%u (error %d).",
                             word_name,
                             (unsigned int)(coord->x + offset),
                             (unsigned int)coord->y,
@@ -627,7 +622,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
             break;
         }
 
-        shell_print(sh, "%s: start x=%u y=%u, length=%u",
+        shell_print(sh, "Showing %s at x=%u, y=%u (length %u).",
                     word_name,
                     (unsigned int)coord->x,
                     (unsigned int)coord->y,
@@ -635,7 +630,8 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
         ret = display_update();
         if (ret < 0) {
-            shell_error(sh, "Display update for %s failed: %d",
+            shell_error(sh, "Could not update the display for %s "
+                        "(error %d).",
                         word_name, ret);
             break;
         }
@@ -655,7 +651,8 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
     int refresh_ret = timeprocess_refresh_display();
     if (refresh_ret < 0) {
-        shell_error(sh, "Failed to refresh the clock after the word test: %d",
+        shell_error(sh, "Could not refresh the clock after the word test "
+                    "(error %d).",
                     refresh_ret);
         if (ret == 0) {
             ret = refresh_ret;
@@ -675,13 +672,15 @@ static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
         enum display_color color;
         int ret = display_get_color(&color);
         if (ret != 0) {
-            shell_error(sh, "Failed to get display color: %d", ret);
+            shell_error(sh, "Could not get the display color (error %d).",
+                        ret);
             return ret;
         }
 
-        shell_print(sh, "Current display color: %s",
+        shell_print(sh, "Display color: %s.",
                     display_color_name(color));
-        shell_print(sh, "Available colors: white red blue green cyan yellow magenta");
+        shell_print(sh, "Available colors: white, red, blue, green, cyan, "
+                    "yellow, magenta.");
         return 0;
     }
 
@@ -693,24 +692,25 @@ static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
     }
 
     if (color == DISPLAY_COLOR_COUNT) {
-        shell_error(sh, "Unknown color '%s'. Available: white red blue green cyan yellow magenta",
+        shell_error(sh, "Unknown color '%s'. Available colors: white, red, "
+                    "blue, green, cyan, yellow, magenta.",
                     argv[1]);
         return -EINVAL;
     }
 
     int ret = display_set_color(color);
     if (ret != 0) {
-        shell_error(sh, "Failed to set display color: %d", ret);
+        shell_error(sh, "Could not set the display color (error %d).", ret);
         return ret;
     }
 
     ret = display_request_update();
     if (ret < 0) {
-        shell_error(sh, "Failed to update display: %d", ret);
+        shell_error(sh, "Could not update the display (error %d).", ret);
         return ret;
     }
 
-    shell_print(sh, "Display color set to %s", display_color_name(color));
+    shell_print(sh, "Display color set to %s.", display_color_name(color));
     return 0;
 }
 
@@ -722,18 +722,19 @@ static int cmd_display_brightness(const struct shell *sh, size_t argc,
         uint8_t max;
         int ret = display_get_brightness_limits(&min, &max);
         if (ret != 0) {
-            shell_error(sh, "Failed to get display brightness limits: %d",
+            shell_error(sh, "Could not get the display brightness limits "
+                        "(error %d).",
                         ret);
             return ret;
         }
 
-        shell_print(sh, "Display brightness PWM range: min=%u max=%u",
+        shell_print(sh, "Display brightness PWM limits: min=%u, max=%u.",
                     (unsigned int)min, (unsigned int)max);
         return 0;
     }
 
     if (argc != 3) {
-        shell_error(sh, "Usage: display brightness [<min> <max>]");
+        shell_error(sh, "Usage: display brightness [<min> <max>].");
         return -EINVAL;
     }
 
@@ -741,7 +742,7 @@ static int cmd_display_brightness(const struct shell *sh, size_t argc,
     for (size_t i = 0; i < ARRAY_SIZE(values); i++) {
         char *end;
         if (argv[i + 1][0] == '-') {
-            shell_error(sh, "Brightness values must be between 0 and 255");
+            shell_error(sh, "Brightness values must be between 0 and 255.");
             return -EINVAL;
         }
 
@@ -749,7 +750,7 @@ static int cmd_display_brightness(const struct shell *sh, size_t argc,
         unsigned long value = strtoul(argv[i + 1], &end, 10);
         if (errno != 0 || end == argv[i + 1] || *end != '\0' ||
             value > UINT8_MAX) {
-            shell_error(sh, "Invalid brightness value '%s'; use 0-255",
+            shell_error(sh, "Invalid brightness value '%s'; use 0-255.",
                         argv[i + 1]);
             return -EINVAL;
         }
@@ -757,23 +758,25 @@ static int cmd_display_brightness(const struct shell *sh, size_t argc,
     }
 
     if (values[0] > values[1]) {
-        shell_error(sh, "Minimum brightness must not exceed maximum");
+        shell_error(sh, "Minimum brightness must not exceed maximum.");
         return -EINVAL;
     }
 
     int ret = display_set_brightness_limits(values[0], values[1]);
     if (ret != 0) {
-        shell_error(sh, "Failed to save display brightness limits: %d", ret);
+        shell_error(sh, "Could not save the display brightness limits "
+                    "(error %d).",
+                    ret);
         return ret;
     }
 
     ret = display_request_update();
     if (ret < 0) {
-        shell_error(sh, "Failed to update display: %d", ret);
+        shell_error(sh, "Could not update the display (error %d).", ret);
         return ret;
     }
 
-    shell_print(sh, "Display brightness PWM range set to min=%u max=%u",
+    shell_print(sh, "Display brightness PWM limits set to min=%u, max=%u.",
                 (unsigned int)values[0], (unsigned int)values[1]);
     return 0;
 }
