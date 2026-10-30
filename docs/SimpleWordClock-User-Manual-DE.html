@@ -154,31 +154,24 @@
   .cover h1 { margin: 0; max-width: 105mm; font-size: 30pt; }
   .cover .subtitle { max-width: 98mm; color: #dce2e5; font-size: 11pt; line-height: 1.45; }
   .cover .cover-label { color: #dce2e5; font-size: 7.5pt; font-weight: 700; letter-spacing: .9pt; }
-  .clock-art {
-    position: relative;
+  .cover-clock-frame {
+    display: grid;
     width: 78mm;
     height: 78mm;
     align-self: flex-end;
     margin: -4mm 1mm 0 0;
     border: 1mm solid #84929a;
     border-radius: 50%;
-    background: radial-gradient(circle, #35434c 0 60%, transparent 60.5%);
+    place-items: center;
+    background: #f2f4f5;
+    overflow: hidden;
   }
-  .clock-art::before, .clock-art::after {
-    content: "";
-    position: absolute;
-    inset: 9mm;
-    border: .35mm solid #697984;
-    border-radius: 50%;
-  }
-  .clock-art::after { inset: 18mm; border-color: var(--accent); }
-  .clock-art b {
-    position: absolute;
-    top: 35mm;
-    left: 20mm;
-    color: #fff;
-    font-size: 8pt;
-    letter-spacing: 2pt;
+  .cover-clock-frame img {
+    display: block;
+    width: 68mm;
+    height: 42mm;
+    object-fit: cover;
+    object-position: center top;
   }
   .backcover { background: #f2f4f5; }
   .backcover .contact-line { height: 7mm; border-bottom: .3mm solid #aeb8bd; }
@@ -190,27 +183,35 @@
     color: var(--ink);
     text-align: center;
   }
-  .back-cover::after {
-    content: none;
-  }
-  .back-cover .clock-art {
-    width: 64mm;
-    height: 64mm;
-    align-self: center;
-    margin: 0;
-    border-color: #84929a;
-    background: radial-gradient(circle, #35434c 0 60%, transparent 60.5%);
-  }
-  .back-cover .clock-art::before { inset: 8mm; }
-  .back-cover .clock-art::after { inset: 16mm; }
-  .back-cover .clock-art b {
-    top: 29mm;
-    left: 50%;
-    transform: translateX(-50%);
-  }
+  .back-cover::after { content: none; }
   .back-cover .cover-label {
     margin: 0;
     color: var(--muted);
+  }
+  .back-message {
+    max-width: 90mm;
+    padding: 8mm 0;
+  }
+  .back-message-kicker {
+    margin-bottom: 3mm;
+    color: var(--accent);
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 1.2pt;
+  }
+  .back-message-title {
+    margin: 0;
+    font-size: 25pt;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.4pt;
+  }
+  .back-message-rule {
+    display: block;
+    width: 14mm;
+    height: .8mm;
+    margin: 6mm auto 0;
+    background: var(--accent);
   }
   .back-cover .back-link {
     margin: 0;
@@ -315,21 +316,27 @@
 <!-- Sheet 1, outside: page 12 on the left, front cover on the right. -->
 <section class="sheet">
   <article class="page cover back-cover">
-    <p class="cover-label">SWABIAN EDITION</p>
-    <div class="clock-art"><b>ES ISCH</b></div>
+    <p class="cover-label">SCHWÄBISCHE AUSGABE</p>
+    <div class="back-message">
+      <p class="back-message-kicker">ZEIT FÜR</p>
+      <p class="back-message-title">a bissle<br>Schwäbisch.</p>
+      <span class="back-message-rule"></span>
+    </div>
     <p class="back-link">github.com/AssFactory/SimpleWordClock</p>
   </article>
   <article class="page cover">
     <div>
       <p class="kicker">Bedienungsanleitung</p>
-      <p class="cover-label">WORTUHR · SWABIAN EDITION</p>
+      <p class="cover-label">WORTUHR · SCHWÄBISCHE AUSGABE</p>
     </div>
     <div>
       <h1>Simple<br>Word Clock</h1>
-      <p class="subtitle">Wort für Wort die Uhrzeit.<br>Kurzanleitung für Inbetriebnahme, Einstellung und Pflege.</p>
+      <p class="subtitle">Kurzanleitung für Inbetriebnahme, Einstellung und Pflege.</p>
     </div>
-    <div class="clock-art"><b>ES ISCH</b></div>
-    <p class="cover-label">SICHER · EINFACH · ZUVERLÄSSIG</p>
+    <div class="cover-clock-frame">
+      <img src="word-clock.svg" alt="Perspektivische Linienzeichnung der Simple Word Clock.">
+    </div>
+    <p class="cover-label">DIE UHRZEIT · AUF UNSERE ART</p>
   </article>
 </section>
 
