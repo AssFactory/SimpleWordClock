@@ -238,22 +238,13 @@
   }
   .terminal-settings p { margin-bottom: 1.2mm; }
   .terminal-settings p:last-child { margin-bottom: 0; }
-  .connector-diagram {
+  .word-clock-image {
     display: block;
-    width: 100%;
-    height: auto;
-    margin: 2mm 0 1mm;
-  }
-  .connector-legend {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .connector-legend li {
-    display: flex;
-    align-items: baseline;
-    gap: 2mm;
-    margin: 1.2mm 0;
+    width: auto;
+    height: 130mm;
+    max-width: 100%;
+    object-fit: contain;
+    margin: 2mm auto 8mm;
   }
   .connector-number {
     display: inline-flex;
@@ -277,6 +268,39 @@
     font-size: 7pt;
     font-weight: 600;
   }
+  .color-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2mm;
+    margin: 1.5mm 0 2mm;
+    padding: 0;
+    list-style: none;
+  }
+  .color-options li {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+    margin: 0;
+    font-size: 7.5pt;
+  }
+  .color-swatch {
+    flex: 0 0 5mm;
+    width: 5mm;
+    height: 5mm;
+    border: .3mm solid #aeb8be;
+    border-radius: 50%;
+  }
+  .swatch-white { background: #fff; }
+  .swatch-red { background: #e2231a; }
+  .swatch-blue { background: #1677d2; }
+  .swatch-green { background: #16833b; }
+  .swatch-cyan { background: #00b9c7; }
+  .swatch-yellow { background: #f2c400; }
+  .swatch-magenta { background: #d72cbd; }
+  .troubleshooting h3 { margin: 2mm 0 1mm; font-size: 8pt; }
+  .troubleshooting > p:not(.small) { margin-bottom: 1.2mm; font-size: 7.5pt; line-height: 1.25; }
+  .troubleshooting .cmd { margin: 1mm 0; padding: 1mm 2mm; }
+  .troubleshooting .cmd span { margin-top: .5mm; font-size: 6.8pt; line-height: 1.2; }
   @media screen {
     .sheet { outline: 1px solid #c5cbce; }
   }
@@ -317,13 +341,13 @@
     <p class="lead">Die Anleitung ist als Heft aufgebaut. Seitenzahlen beziehen sich auf die gedruckten Seiten.</p>
     <ol class="toc-list">
       <li><span>Shell einrichten und verbinden</span><span>03</span></li>
-      <li><span>Überblick und Inbetriebnahme</span><span>04</span></li>
-      <li><span>Datum und Uhrzeit einstellen</span><span>05</span></li>
-      <li><span>Sensor und Anzeige prüfen</span><span>06</span></li>
+      <li><span>Ihre Wortuhr</span><span>04</span></li>
+      <li><span>Erste Inbetriebnahme</span><span>05</span></li>
+      <li><span>Helligkeit und Farbe einstellen</span><span>06</span></li>
       <li><span>Firmware aktualisieren</span><span>07</span></li>
       <li><span>Fehlerhilfe</span><span>08</span></li>
       <li><span>Sicherheit</span><span>09</span></li>
-      <li><span>Pflege und technische Daten</span><span>10</span></li>
+      <li><span>Pflege und Wartung</span><span>10</span></li>
       <li><span>Notizen</span><span>11</span></li>
     </ol>
     <div class="box note" style="margin-top:8mm">
@@ -353,8 +377,8 @@
 <!-- Sheet 2, outside: pages 10 and 3. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">08 · Pflege und technische Daten</p>
-    <h2>Pflege und technische Daten</h2>
+    <p class="kicker">08 · Pflege und Wartung</p>
+    <h2>Pflege und Wartung</h2>
     <h3>Reinigung</h3>
     <ol>
       <li>Netzteil von der Steckdose trennen und die Geräteversorgung abstecken.</li>
@@ -364,13 +388,9 @@
     </ol>
     <h3>Wartung</h3>
     <p>Die Uhr benötigt im normalen Betrieb keine regelmäßige Wartung. Prüfen Sie gelegentlich Kabel, Stecker und Gehäuse auf Schäden. Wenn die Uhr nach einem Stromausfall die Zeit verliert, lassen Sie die Pufferbatterie der Echtzeituhr prüfen und gegebenenfalls ersetzen.</p>
-    <h3>Technische Übersicht</h3>
-    <p><span class="pill">Versorgung: 5 V DC</span><span class="pill">Anzeige: LED-Wortmatrix</span><span class="pill">LEDs: 104</span><span class="pill">Sensor: Umgebungslicht</span><span class="pill">Zeit: Echtzeituhr</span></p>
-    <p><span class="pill">Steuerung: Mikrocontroller</span><span class="pill">Service: serielle USB-Konsole</span></p>
-    <p class="small">Die Stromaufnahme hängt von LED-Anzahl, Helligkeit und Anzeigeinhalt ab. Das Netzteil muss passend zur konkreten Ausführung gewählt werden.</p>
     <h3>Entsorgung</h3>
     <p>Elektronik und Batterien nicht über den Hausmüll entsorgen. Bitte bei einer geeigneten Sammelstelle abgeben und örtliche Vorschriften beachten.</p>
-    <div class="footer"><span>Pflege & technische Daten</span><span>10</span></div>
+    <div class="footer"><span>Pflege & Wartung</span><span>10</span></div>
   </article>
   <article class="page">
     <p class="kicker">01 · Shell einrichten</p>
@@ -401,50 +421,12 @@
 <!-- Sheet 2, inside: pages 4 and 9. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">02 · Überblick &amp; Inbetriebnahme</p>
+    <p class="kicker">02 · Überblick</p>
     <h2>Ihre Wortuhr</h2>
     <p class="lead">Die Simple Word Clock zeigt die Uhrzeit mit beleuchteten Wörtern in schwäbischer Ausdrucksweise an. Ein Helligkeitssensor passt die Anzeige automatisch an das Umgebungslicht an.</p>
-    <h3>Anschlussseite der Uhr</h3>
-    <svg class="connector-diagram" viewBox="0 0 600 150" role="img" aria-labelledby="connector-title connector-desc">
-      <title id="connector-title">Seitenansicht der Anschlüsse</title>
-      <desc id="connector-desc">Die drei Anschlüsse sind von links nach rechts mit 1, 2 und 3 markiert.</desc>
-      <g fill="none" stroke="#18232b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 12h576v70H12z"/>
-        <path d="M25 25h550M25 70h550" stroke="#596873" stroke-width="2"/>
-        <path d="M220 43h39v20h-39zM226 48h27v10h-27z"/>
-        <circle cx="320" cy="53" r="15"/>
-        <circle cx="320" cy="53" r="7"/>
-        <rect x="375" y="40" width="49" height="27" rx="5"/>
-        <path d="M388 46v15m7-15v15m7-15v15"/>
-        <path d="M240 67v28m80-14v14m80-28v28" stroke-width="2.5"/>
-      </g>
-      <g fill="white" stroke="#18232b" stroke-width="3">
-        <circle cx="240" cy="119" r="17"/>
-        <circle cx="320" cy="119" r="17"/>
-        <circle cx="400" cy="119" r="17"/>
-      </g>
-      <g fill="#18232b" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" text-anchor="middle">
-        <text x="240" y="125">1</text>
-        <text x="320" y="125">2</text>
-        <text x="400" y="125">3</text>
-      </g>
-    </svg>
-    <ol class="connector-legend">
-      <li><span class="connector-number">1</span><span><strong>USB:</strong> Verbindung zum Computer für die Shell.</span></li>
-      <li><span class="connector-number">2</span><span><strong>DC:</strong> Anschluss für die Stromversorgung der Uhr.</span></li>
-      <li><span class="connector-number">3</span><span><strong>Sicherung:</strong> schützt die Stromversorgung; nur durch den passenden Typ ersetzen.</span></li>
-    </ol>
-    <h3>Erste Inbetriebnahme</h3>
-    <ol class="steps">
-      <li>Uhr standsicher und trocken aufstellen. Sensoröffnung nicht verdecken.</li>
-      <li>Netzteil und Verkabelung prüfen; nur die für das Gerät vorgesehene Versorgung verwenden.</li>
-      <li>Die 5-V-Versorgung anschließen. Für Shell-Befehle zusätzlich ein USB-Datenkabel und eine serielle Terminalverbindung verwenden.</li>
-      <li>Uhrzeit prüfen und bei Bedarf einstellen (Seite 5).</li>
-    </ol>
-    <div class="box warning">
-      <p><strong>Wichtig:</strong> USB stellt die Text-Shell bereit und ersetzt nicht die vorgesehene Stromversorgung der Uhr und LEDs.</p>
-    </div>
-    <div class="footer"><span>Überblick & Inbetriebnahme</span><span>04</span></div>
+    <h3>Ansichten der Uhr</h3>
+    <img class="word-clock-image" src="word-clock-views.svg" alt="Beschriftete technische Ansichten der Wortuhr mit Lichtsensor, Pufferbatterie, Wandhalterung und Anschlüssen.">
+    <div class="footer"><span>Ihre Wortuhr</span><span>04</span></div>
   </article>
   <article class="page">
     <p class="kicker">07 · Sicherheit</p>
@@ -479,66 +461,78 @@
 
 <!-- Sheet 3, outside: pages 8 and 5. -->
 <section class="sheet">
-  <article class="page">
+  <article class="page troubleshooting">
     <p class="kicker">06 · Fehlerhilfe</p>
     <h2>Wenn etwas nicht funktioniert</h2>
-    <h3>Kein Shell-Prompt sichtbar</h3>
-    <ul>
-      <li>Prüfen, ob das USB-Kabel Daten übertragen kann; ein Ladekabel reicht nicht.</li>
-      <li>Den beim Anstecken neu hinzugekommenen COM-Port bzw. seriellen Geräteport auswählen.</li>
-      <li>Serielle Einstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung. Verbindung neu öffnen und Enter drücken.</li>
-    </ul>
-    <h3>Uhrzeit stimmt nicht</h3>
-    <p>Mit <strong>time get</strong> prüfen und die Zeit gegebenenfalls neu setzen (Seite 5). Verliert die Uhr die Zeit bei getrennter Versorgung, die Pufferbatterie prüfen lassen.</p>
-    <h3>Anzeige bleibt dunkel</h3>
-    <p>Prüfen, ob die vorgesehene 5-V-Versorgung angeschlossen ist. Bei auffälliger Erwärmung, Geruch oder beschädigten Kabeln sofort abschalten und nicht weiter betreiben.</p>
-    <h3>Hilfe und Versionsangabe</h3>
-    <div class="cmd">app version<span>Zeigt die installierte Firmwareversion an.</span></div>
-    <p>Für eine Fehlermeldung im Projektbereich sind Firmwareversion und eine kurze Beschreibung der beobachteten Symptome hilfreich.</p>
+    <p class="small">Prüfen Sie die Punkte der Reihe nach. Für Befehle muss die serielle Shell verbunden sein (Seite 3).</p>
+    <h3>1. Sicherheit und Stromversorgung</h3>
+    <p>Bei Wärme, Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Sicherung ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
+    <h3>2. LEDs einzeln prüfen</h3>
+    <div class="cmd">display test<span>Testet alle LEDs nacheinander; jede leuchtet kurz auf. Der Test dauert etwa eine halbe Minute und stellt danach die Uhranzeige wieder her.</span></div>
+    <p>Bei einzelnen Ausfällen LED, Verbindung oder Versorgung prüfen lassen. Bleiben alle dunkel, Versorgung und Sicherung fachkundig prüfen lassen.</p>
+    <h3>3. Wörter und Zifferblatt prüfen</h3>
+    <div class="cmd">display words<span>Zeigt jedes Wort einzeln für eine Sekunde in Weiß und danach wieder die Uhrzeit an.</span></div>
+    <p>Leuchten alle LEDs, aber Wörter fehlen oder sitzen falsch, Zifferblatt und LED-Zuordnung prüfen lassen.</p>
+    <h3>4. Helligkeit und Farbe prüfen</h3>
+    <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
+    <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. <strong>display brightness</strong> zeigt die PWM-Grenzen (Einstellung: Seite 6).</p>
+    <p>Falsche Farbe mit <strong>display color</strong> abfragen; die Rückmeldung nennt die aktive Farbe. Farben einstellen: Seite 6.</p>
+    <h3>5. Uhrzeit und Shell prüfen</h3>
+    <p>Mit <strong>time get</strong> prüfen und Uhrzeit bei Bedarf neu setzen (Seite 5). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen. Ohne Shell-Prompt Datenkabel, COM-Port sowie Terminaleinstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung.</p>
+    <p class="small">Für Hilfe die Firmwareversion mit <strong>app version</strong> auslesen und zusammen mit dem Fehlerbild angeben.</p>
     <div class="footer"><span>Fehlerhilfe</span><span>08</span></div>
   </article>
   <article class="page">
-    <p class="kicker">03 · Uhrzeit einstellen</p>
-    <h2>Datum und Uhrzeit setzen</h2>
-    <p>Öffnen Sie die serielle Shell (Seite 3) und lesen Sie zuerst die gespeicherte Zeit aus:</p>
+    <p class="kicker">03 · Erste Schritte</p>
+    <h2>Erste Inbetriebnahme</h2>
+    <ol class="steps">
+      <li>Uhr standsicher und trocken aufstellen. Sensoröffnung nicht verdecken.</li>
+      <li>Netzteil und Verkabelung prüfen; nur die für das Gerät vorgesehene Versorgung verwenden.</li>
+      <li>Die 5-V-Versorgung anschließen. Für Shell-Befehle zusätzlich ein USB-Datenkabel und eine serielle Terminalverbindung verwenden (Seite 3).</li>
+    </ol>
+    <div class="box warning">
+      <p><strong>Wichtig:</strong> USB stellt die Text-Shell bereit und ersetzt nicht die vorgesehene Stromversorgung der Uhr und LEDs.</p>
+    </div>
+    <h3>Datum und Uhrzeit einstellen</h3>
+    <p>Öffnen Sie die serielle Shell (Seite 3) und lesen Sie die gespeicherte Zeit aus:</p>
     <div class="cmd">time get<span>Zeigt Datum und Uhrzeit der Echtzeituhr.</span></div>
     <p>Zum Einstellen das aktuelle Datum und die Ortszeit im Format Jahr-Monat-Tag Stunde:Minute eingeben:</p>
     <div class="box">
       <p><strong>Beispiel:</strong> 28. Oktober 2026, 07:51 Uhr</p>
       <p class="cmd" style="margin-bottom:0">time set 2026-10-28 07:51</p>
     </div>
-    <p>Jahr: 2000 bis 2099; Stunde: 00 bis 23; Minute: 00 bis 59. Die Sekunden werden beim Setzen auf 00 gestellt. Ersetzen Sie das Beispiel durch das aktuelle Datum und die aktuelle Ortszeit.</p>
-    <p>Die Uhr wechselt in Mitteleuropa automatisch zwischen Winter- und Sommerzeit. Am letzten Sonntag im März gibt es die Ortszeit zwischen 02:00 und 02:59 nicht; am letzten Sonntag im Oktober wird die erste 02-Uhr-Stunde angenommen. Nach dem Aufspielen dieser Firmware die Ortszeit einmal neu setzen; intern speichert die Uhr die Zeit in UTC.</p>
+    <p>Jahr: 2000 bis 2099; Stunde: 00 bis 23; Minute: 00 bis 59. Die Sekunden werden auf 00 gesetzt. Ersetzen Sie das Beispiel durch das aktuelle Datum und die Ortszeit. In Mitteleuropa wechselt die Uhr automatisch zwischen Winter- und Sommerzeit. Nach einem Firmware-Update die Ortszeit neu setzen; intern speichert die Uhr UTC.</p>
     <p>Mit <strong>time get</strong> kontrollieren, ob die Einstellung übernommen wurde. Die Uhr läuft danach selbstständig weiter.</p>
     <div class="box note">
       <p><strong>Uhr verliert die Zeit?</strong> Falls das Gerät eine Pufferbatterie verwendet, prüfen Sie, ob sie richtig eingesetzt und funktionsfähig ist. Beachten Sie die Kennzeichnung am Gerät.</p>
     </div>
-    <div class="footer"><span>Uhrzeit einstellen</span><span>05</span></div>
+    <div class="footer"><span>Erste Inbetriebnahme</span><span>05</span></div>
   </article>
 </section>
 
 <!-- Sheet 3, inside: pages 6 and 7. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">04 · Sensor & Anzeige prüfen</p>
-    <h2>Funktionen testen</h2>
-    <h3>Umgebungshelligkeit abfragen</h3>
-    <div class="cmd">ambiente get<span>Gibt die zuletzt gemessene Beleuchtungsstärke in Lux aus.</span></div>
-    <p>Der Sensor misst etwa alle fünf Sekunden. Bei weniger als etwa 100 lx leuchtet die Anzeige mit dem unteren, bei mehr als etwa 3000 lx mit dem oberen Helligkeitswert. Dazwischen wird angepasst; eine zusätzliche Begrenzung schützt die LED-Stromaufnahme.</p>
-    <h3>LED-Test</h3>
-    <div class="cmd">display test<span>Schaltet die einzelnen LEDs kurz nacheinander ein.</span></div>
-    <p>Der Test dauert einige Zeit. Danach wird die aktuelle Uhranzeige wiederhergestellt.</p>
-    <h3>Anzeigefarbe einstellen</h3>
-    <div class="cmd">display color<span>Zeigt die aktuelle und alle verfügbaren Farben.</span></div>
-    <div class="cmd">display color cyan<span>Beispiel: stellt die Farbe Cyan ein.</span></div>
-    <p>Verfügbar sind white, red, blue, green, cyan, yellow und magenta. Die Farbe gilt für Uhrzeit, LED-Test und Wort-Test und bleibt auch nach dem Ausschalten gespeichert.</p>
-    <h3>Wort-Test</h3>
-    <div class="cmd">display words<span>Zeigt die Wörter des Zifferblatts einzeln an.</span></div>
-    <p>Nach dem Test kehrt die Anzeige zur Uhrzeit zurück. Die Testbefehle verändern keine dauerhaften Einstellungen.</p>
-    <div class="box note">
-      <p><strong>Hinweis:</strong> Direkt nach dem Einschalten kann der Sensorwert noch dem Startwert entsprechen. Warten Sie einige Sekunden und fragen Sie erneut ab.</p>
-    </div>
-    <div class="footer"><span>Sensor & Anzeige</span><span>06</span></div>
+    <p class="kicker">04 · Anzeige einstellen</p>
+    <h2>Helligkeit und Farbe</h2>
+    <h3>Automatische Helligkeit</h3>
+    <p>Der Lichtsensor misst etwa alle fünf Sekunden. Zwischen 0 und 1500 lx wird die LED-Helligkeit automatisch zwischen den eingestellten PWM-Grenzen angepasst. Bei hoher LED-Last kann der Stromschutz zusätzlich dimmen.</p>
+    <h3>Helligkeitsgrenzen anzeigen oder ändern</h3>
+    <div class="cmd">display brightness<br>display brightness 50 200<span>Ohne Werte werden die aktuellen Grenzen angezeigt. Mit zwei Werten werden Minimum und Maximum gesetzt. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 50 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
+    <p>Ein höherer Minimalwert hält die Anzeige auch bei Dunkelheit heller; ein niedrigerer Maximalwert begrenzt die Helligkeit am Tag. <strong>0</strong> kann die LEDs vollständig ausschalten.</p>
+    <h3>Anzeigefarbe wählen</h3>
+    <div class="cmd">display color<br>display color cyan<span>Ohne Farbname wird die aktuelle Farbe angezeigt. Mit einem Namen wird die Farbe sofort eingestellt und gespeichert.</span></div>
+    <ul class="color-options" aria-label="Verfügbare Anzeigefarben">
+      <li><span class="color-swatch swatch-white" aria-hidden="true"></span>white</li>
+      <li><span class="color-swatch swatch-red" aria-hidden="true"></span>red</li>
+      <li><span class="color-swatch swatch-blue" aria-hidden="true"></span>blue</li>
+      <li><span class="color-swatch swatch-green" aria-hidden="true"></span>green</li>
+      <li><span class="color-swatch swatch-cyan" aria-hidden="true"></span>cyan</li>
+      <li><span class="color-swatch swatch-yellow" aria-hidden="true"></span>yellow</li>
+      <li><span class="color-swatch swatch-magenta" aria-hidden="true"></span>magenta</li>
+    </ul>
+    <p class="small">Die Namen müssen genau wie oben eingegeben werden. Für die Funktionsprüfung bei Anzeigeproblemen siehe die systematische Fehlerhilfe auf Seite 8.</p>
+    <div class="footer"><span>Helligkeit & Farbe</span><span>06</span></div>
   </article>
   <article class="page">
     <p class="kicker">05 · Firmware aktualisieren</p>
