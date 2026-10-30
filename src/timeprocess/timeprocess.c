@@ -74,7 +74,7 @@ static bool cached_time_valid;
 
 #define TIME_DISPLAY_WIDTH 12U
 #define TIME_DISPLAY_HEIGHT 10U
-#define TIME_SWEEP_STEP_MS 70U
+#define TIME_SWEEP_STEP_MS 33U
 #define TIME_SWEEP_FADE_IN_FIRST 32U
 #define TIME_SWEEP_FADE_IN_SECOND 64U
 #define TIME_SWEEP_FADE_IN_THIRD 112U
@@ -596,14 +596,21 @@ static int timeprocess_render_time(int hour, uint8_t slot, bool animate,
             return ret;
         }
 
-        for (int sweep_x = 0;
-             sweep_x < TIME_DISPLAY_WIDTH + 3;
-             sweep_x++) {
+        for (int sweep_step = 0;
+             sweep_step < (TIME_DISPLAY_WIDTH + 3) * 2;
+             sweep_step++) {
+            int sweep_x = sweep_step / 2;
             for (uint8_t y = 0; y < TIME_DISPLAY_HEIGHT; y++) {
                 for (uint8_t x = 0; x < TIME_DISPLAY_WIDTH; x++) {
                     uint8_t level =
                         timeprocess_sweep_level(old_frame, new_frame,
                                                 x, y, sweep_x);
+                    if ((sweep_step % 2) != 0) {
+                        uint8_t next_level =
+                            timeprocess_sweep_level(old_frame, new_frame,
+                                                    x, y, sweep_x + 1);
+                        level = (uint8_t)(((uint16_t)level + next_level) / 2U);
+                    }
                     ret = display_set_pixel_level(x, y, level);
                     if (ret != 0) {
                         return ret;
