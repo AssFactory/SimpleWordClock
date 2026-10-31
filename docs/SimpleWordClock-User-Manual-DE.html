@@ -117,6 +117,22 @@
     font-size: 8pt;
     font-weight: 700;
   }
+  .steps li.step-with-settings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54mm;
+    gap: 3mm;
+    align-items: start;
+  }
+  .shell-setup .steps li { margin-bottom: 1mm; }
+  .shell-setup .steps li.step-with-settings .terminal-settings {
+    margin: 0;
+    padding: 2mm 2.5mm;
+  }
+  .shell-setup .steps li.step-with-settings .terminal-settings p {
+    margin-bottom: .6mm;
+    font-size: 7pt;
+    line-height: 1.2;
+  }
   .footer {
     position: absolute;
     right: 13mm;
@@ -239,6 +255,9 @@
   }
   .terminal-settings p { margin-bottom: 1.2mm; }
   .terminal-settings p:last-child { margin-bottom: 0; }
+  .disposal { display: flex; align-items: center; gap: 3mm; }
+  .disposal-icon { flex: 0 0 auto; width: 9mm; height: 11mm; color: var(--ink); }
+  .disposal p { margin-bottom: 0; }
   .word-clock-image {
     display: block;
     width: auto;
@@ -345,22 +364,17 @@
   <article class="page">
     <p class="kicker">Inhaltsverzeichnis</p>
     <h2>Schnell gefunden</h2>
-    <p class="lead">Die Anleitung ist als Heft aufgebaut. Seitenzahlen beziehen sich auf die gedruckten Seiten.</p>
     <ol class="toc-list">
-      <li><span>Shell einrichten und verbinden</span><span>03</span></li>
+      <li><span>Sicherheit</span><span>03</span></li>
       <li><span>Ihre Wortuhr</span><span>04</span></li>
       <li><span>Erste Inbetriebnahme</span><span>05</span></li>
-      <li><span>Helligkeit und Farbe einstellen</span><span>06</span></li>
-      <li><span>Firmware aktualisieren</span><span>07</span></li>
-      <li><span>Fehlerhilfe</span><span>08</span></li>
-      <li><span>Sicherheit</span><span>09</span></li>
-      <li><span>Pflege und Wartung</span><span>10</span></li>
+      <li><span>Datum und Uhrzeit</span><span>06</span></li>
+      <li><span>Helligkeit und Farbe einstellen</span><span>07</span></li>
+      <li><span>Pflege und Wartung</span><span>08</span></li>
+      <li><span>Firmware aktualisieren</span><span>09</span></li>
+      <li><span>Fehlerhilfe</span><span>10</span></li>
       <li><span>Notizen</span><span>11</span></li>
     </ol>
-    <div class="box note" style="margin-top:8mm">
-      <p><strong>Schon eingerichtet?</strong></p>
-      <p>Wenn die serielle Shell bereits funktioniert, können Sie Seite 3 überspringen und direkt zum gewünschten Thema gehen.</p>
-    </div>
     <div class="footer"><span>Inhaltsverzeichnis</span><span>02</span></div>
   </article>
   <article class="page">
@@ -383,62 +397,33 @@
 
 <!-- Sheet 2, outside: pages 10 and 3. -->
 <section class="sheet">
-  <article class="page">
-    <p class="kicker">08 · Pflege und Wartung</p>
-    <h2>Pflege und Wartung</h2>
-    <h3>Reinigung</h3>
-    <ol>
-      <li>Netzteil von der Steckdose trennen und die Geräteversorgung abstecken.</li>
-      <li>Gehäuse mit einem weichen, trockenen oder leicht angefeuchteten Tuch abwischen.</li>
-      <li>Keine Lösungsmittel, Scheuermittel oder Flüssigkeit in Öffnungen und Sensorbereiche bringen.</li>
-      <li>Vor dem erneuten Anschließen vollständig trocknen lassen.</li>
-    </ol>
-    <h3>Wartung</h3>
-    <p>Die Uhr benötigt im normalen Betrieb keine regelmäßige Wartung. Prüfen Sie gelegentlich Kabel, Stecker und Gehäuse auf Schäden. Wenn die Uhr nach einem Stromausfall die Zeit verliert, lassen Sie die Pufferbatterie der Echtzeituhr prüfen und gegebenenfalls ersetzen.</p>
-    <h3>Entsorgung</h3>
-    <p>Elektronik und Batterien nicht über den Hausmüll entsorgen. Bitte bei einer geeigneten Sammelstelle abgeben und örtliche Vorschriften beachten.</p>
-    <div class="footer"><span>Pflege & Wartung</span><span>10</span></div>
+  <article class="page troubleshooting">
+    <p class="kicker">08 · Fehlerhilfe</p>
+    <h2>Wenn etwas nicht funktioniert</h2>
+    <p class="small">Prüfen Sie die Punkte der Reihe nach. Für Befehle muss die serielle Shell verbunden sein (Seite 5).</p>
+    <h3>Sicherheit und Stromversorgung</h3>
+    <p>Bei Wärme, Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Feinsicherung (5 × 20 mm, 2,5 A, mittelträge) ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
+    <h3>Helligkeit und Farbe prüfen</h3>
+    <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
+    <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. Die PWM-Grenzen wie auf Seite 7 beschrieben prüfen.</p>
+    <div class="cmd">display brightness get</div>
+    <p>Falsche Farbe? Die aktive Farbe wie auf Seite 7 beschrieben abfragen.</p>
+    <div class="cmd">display color get<br>display color list</div>
+    <h3>Wörter und Zifferblatt prüfen</h3>
+    <div class="cmd">display words<span>Zeigt jedes Wort einzeln für eine Sekunde in Weiß und danach wieder die Uhrzeit an.</span></div>
+    <p>Leuchten alle LEDs, aber Wörter fehlen oder sitzen falsch, Zifferblatt und LED-Zuordnung prüfen lassen.</p>
+    <h3>LEDs einzeln prüfen</h3>
+    <div class="cmd">display pixels<span>Testet alle LEDs nacheinander; jede leuchtet kurz auf. Der Test dauert etwa eine halbe Minute und stellt danach die Uhranzeige wieder her.</span></div>
+    <p>Bei einzelnen Ausfällen LED, Verbindung oder Versorgung prüfen lassen. Bleiben alle dunkel, Versorgung und Sicherung fachkundig prüfen lassen.</p>
+    <h3>Uhrzeit und Shell prüfen</h3>
+    <p>Uhrzeit prüfen und bei Bedarf neu setzen (Seite 6). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen.</p>
+    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM</div>
+    <p class="small">Für Hilfe die Firmwareversion auslesen und zusammen mit dem Fehlerbild angeben.</p>
+    <div class="cmd">app version</div>
+    <div class="footer"><span>Fehlerhilfe</span><span>10</span></div>
   </article>
   <article class="page">
-    <p class="kicker">01 · Shell einrichten</p>
-    <h2>Serielle Shell verbinden</h2>
-    <div class="box note">
-      <p><strong>Dieser Schritt kann übersprungen werden,</strong> wenn die serielle Shell bereits eingerichtet ist und Sie den Prompt <code>uart:~$</code> sehen.</p>
-    </div>
-    <p>Die Uhr stellt über USB eine einfache Text-Shell bereit. Ein Terminalprogramm am Computer zeigt diese Eingabeaufforderung an und überträgt Ihre Befehle. Es ist keine separate UART-Verkabelung und keine spezielle Uhren-App erforderlich. Die Shell überträgt keine Uhrzeit automatisch.</p>
-    <ol class="steps">
-      <li>Uhr mit einem USB-Datenkabel am Computer anschließen. Ein reines Ladekabel reicht nicht aus. Die vorgesehene 5-V-Versorgung der Uhr ebenfalls anschließen.</li>
-      <li>In PuTTY oder Tera Term als Verbindungstyp <strong>Serial</strong> auswählen. Unter Windows den COM-Port der Uhr im Geräte-Manager ermitteln. Unter macOS/Linux heißt der Port meist <code>/dev/ttyACM0</code> oder ähnlich.</li>
-      <li>Die Verbindungseinstellungen wie im Kasten rechts übernehmen und die Verbindung öffnen.</li>
-      <li>Einmal Enter drücken. Bei der Eingabeaufforderung <code>uart:~$</code> können Sie einen Befehl eingeben und mit Enter absenden.</li>
-    </ol>
-    <p>Mit <strong>help</strong> lassen Sie sich die verfügbaren Shell-Befehle anzeigen. Für Details zu einem Befehl hängen Sie <code>--help</code> an. Die Tab-Taste ergänzt Befehle und Unterbefehle oder zeigt passende Möglichkeiten an.</p>
-    <div class="cmd">help<br>time --help</div>
-    <div class="box terminal-settings">
-      <p><strong>Serielle Terminal-Einstellungen</strong></p>
-      <p><strong>Verbindung:</strong> Serial (nicht SSH)</p>
-      <p><strong>Port:</strong> COM-Port der Uhr bzw. <code>/dev/ttyACM…</code></p>
-      <p><strong>Baudrate:</strong> 115200 · <strong>Datenbits:</strong> 8</p>
-      <p><strong>Parität:</strong> Keine · <strong>Stoppbits:</strong> 1</p>
-      <p><strong>Flusssteuerung:</strong> Keine</p>
-    </div>
-    <p class="small">Die USB-Verbindung dient hier als Textkonsole: Sie zeigt die Shell und nimmt Befehle an. Sie ist weder eine automatische Zeitsynchronisierung noch eine allgemeine Dateiübertragung.</p>
-    <div class="footer"><span>Shell einrichten</span><span>03</span></div>
-  </article>
-</section>
-
-<!-- Sheet 2, inside: pages 4 and 9. -->
-<section class="sheet">
-  <article class="page">
-    <p class="kicker">02 · Überblick</p>
-    <h2>Ihre Wortuhr</h2>
-    <p class="lead">Die Simple Word Clock zeigt die Uhrzeit mit beleuchteten Wörtern in schwäbischer Ausdrucksweise an. Ein Helligkeitssensor passt die Anzeige automatisch an das Umgebungslicht an.</p>
-    <h3>Ansichten der Uhr</h3>
-    <img class="word-clock-image" src="word-clock-views.svg" alt="Beschriftete technische Ansichten der Wortuhr mit Lichtsensor, Pufferbatterie, Wandhalterung und Anschlüssen.">
-    <div class="footer"><span>Ihre Wortuhr</span><span>04</span></div>
-  </article>
-  <article class="page">
-    <p class="kicker">07 · Sicherheit</p>
+    <p class="kicker">01 · Sicherheit</p>
     <h2>Sicher arbeiten</h2>
     <p class="lead">Lesen Sie die Sicherheitshinweise vor der Inbetriebnahme und bewahren Sie diese Anleitung auf.</p>
     <div class="box warning">
@@ -464,56 +449,95 @@
       <p><strong>Bei Rauch, ungewöhnlichem Geruch oder starker Erwärmung:</strong> Gerät sofort außer Betrieb nehmen und die Stromversorgung trennen, sofern dies gefahrlos möglich ist. Nicht erneut einschalten. Vor weiterer Nutzung fachkundig prüfen lassen.</p>
     </div>
     <p class="small">Änderungen an Netzteil, Sicherung oder interner Verdrahtung nur von fachkundigen Personen durchführen lassen.</p>
-    <div class="footer"><span>Sicherheit</span><span>09</span></div>
+    <div class="footer"><span>Sicherheit</span><span>03</span></div>
+  </article>
+</section>
+
+<!-- Sheet 2, inside: pages 4 and 9. -->
+<section class="sheet">
+  <article class="page">
+    <p class="kicker">02 · Überblick</p>
+    <h2>Ihre Wortuhr</h2>
+    <p class="lead">Die Simple Word Clock zeigt die Uhrzeit mit beleuchteten Wörtern in schwäbischer Ausdrucksweise an. Ein Helligkeitssensor passt die Anzeige automatisch an das Umgebungslicht an.</p>
+    <h3>Ansichten der Uhr</h3>
+    <img class="word-clock-image" src="word-clock-views.svg" alt="Beschriftete technische Ansichten der Wortuhr mit Lichtsensor, Pufferbatterie, Wandhalterung und Anschlüssen.">
+    <div class="footer"><span>Ihre Wortuhr</span><span>04</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">07 · Firmware aktualisieren</p>
+    <h2>Firmware per USB aktualisieren</h2>
+    <p>Für die Aktualisierung benötigen Sie die UF2-Datei aus dem Bereich <strong>Releases</strong> des Projektarchivs:</p>
+    <div class="cmd">github.com/AssFactory/SimpleWordClock/releases</div>
+    <ol class="steps">
+      <li>Laden Sie die Firmwaredatei aus dem Bereich Releases des Projektarchivs herunter.</li>
+      <li>Schließen Sie die Uhr mit einem USB-Datenkabel an den Computer an und verbinden Sie die vorgesehene 5-V-Versorgung.</li>
+      <li>Öffnen Sie die serielle Shell wie auf Seite 5 beschrieben und geben Sie den Befehl ein:
+        <div class="cmd">bootsel</div>
+      </li>
+      <li>Der Computer zeigt das Laufwerk <strong>RPI-RP2</strong> an. Kopieren Sie die heruntergeladene UF2-Datei auf dieses Laufwerk.</li>
+      <li>Warten Sie, bis der Kopiervorgang beendet ist und das Laufwerk verschwindet. Die Uhr startet anschließend mit der neuen Firmware neu.</li>
+    </ol>
+    <div class="box warning">
+      <p><strong>Während des Updates:</strong> USB-Kabel und Stromversorgung nicht trennen. Eine falsche Firmwaredatei kann verhindern, dass die Uhr normal startet.</p>
+    </div>
+    <p>Nach dem Neustart können Sie die Shell erneut verbinden und die installierte Firmwareversion sowie die Uhrzeit prüfen.</p>
+    <div class="cmd">app version<br>time get</div>
+    <div class="footer"><span>Firmware aktualisieren</span><span>09</span></div>
   </article>
 </section>
 
 <!-- Sheet 3, outside: pages 8 and 5. -->
 <section class="sheet">
-  <article class="page troubleshooting">
-    <p class="kicker">06 · Fehlerhilfe</p>
-    <h2>Wenn etwas nicht funktioniert</h2>
-    <p class="small">Prüfen Sie die Punkte der Reihe nach. Für Befehle muss die serielle Shell verbunden sein (Seite 3).</p>
-    <h3>1. Sicherheit und Stromversorgung</h3>
-    <p>Bei Wärme, Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Sicherung ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
-    <h3>2. LEDs einzeln prüfen</h3>
-    <div class="cmd">display pixels<span>Testet alle LEDs nacheinander; jede leuchtet kurz auf. Der Test dauert etwa eine halbe Minute und stellt danach die Uhranzeige wieder her.</span></div>
-    <p>Bei einzelnen Ausfällen LED, Verbindung oder Versorgung prüfen lassen. Bleiben alle dunkel, Versorgung und Sicherung fachkundig prüfen lassen.</p>
-    <h3>3. Wörter und Zifferblatt prüfen</h3>
-    <div class="cmd">display words<span>Zeigt jedes Wort einzeln für eine Sekunde in Weiß und danach wieder die Uhrzeit an.</span></div>
-    <p>Leuchten alle LEDs, aber Wörter fehlen oder sitzen falsch, Zifferblatt und LED-Zuordnung prüfen lassen.</p>
-    <h3>4. Helligkeit und Farbe prüfen</h3>
-    <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
-    <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. Die PWM-Grenzen wie auf Seite 6 beschrieben prüfen.</p>
-    <div class="cmd">display brightness get</div>
-    <p>Falsche Farbe? Die aktive Farbe wie auf Seite 6 beschrieben abfragen.</p>
-    <div class="cmd">display color get<br>display color list</div>
-    <h3>5. Uhrzeit und Shell prüfen</h3>
-    <p>Uhrzeit prüfen und bei Bedarf neu setzen (Seite 5). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen. Ohne Shell-Prompt Datenkabel, COM-Port sowie Terminaleinstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung.</p>
-    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM</div>
-    <p class="small">Für Hilfe die Firmwareversion auslesen und zusammen mit dem Fehlerbild angeben.</p>
-    <div class="cmd">app version</div>
-    <div class="footer"><span>Fehlerhilfe</span><span>08</span></div>
-  </article>
   <article class="page">
+    <p class="kicker">06 · Pflege und Wartung</p>
+    <h2>Pflege und Wartung</h2>
+    <h3>Reinigung</h3>
+    <ol class="steps">
+      <li>Netzteil von der Steckdose trennen und die Geräteversorgung abstecken.</li>
+      <li>Gehäuse mit einem weichen, trockenen oder leicht angefeuchteten Tuch abwischen.</li>
+      <li>Keine Lösungsmittel, Scheuermittel oder Flüssigkeit in Öffnungen und Sensorbereiche bringen.</li>
+      <li>Vor dem erneuten Anschließen vollständig trocknen lassen.</li>
+    </ol>
+    <h3>Wartung</h3>
+    <p>Die Uhr benötigt im normalen Betrieb keine regelmäßige Wartung. Prüfen Sie gelegentlich Kabel, Stecker und Gehäuse auf Schäden. Wenn die Uhr nach einem Stromausfall die Zeit verliert, lassen Sie die CR2031-Pufferbatterie der Echtzeituhr prüfen und gegebenenfalls durch denselben Typ ersetzen.</p>
+    <h3>Entsorgung</h3>
+    <div class="disposal">
+      <svg class="disposal-icon" viewBox="0 0 48 56" role="img" aria-label="Durchgestrichene Mülltonne: Elektronik nicht im Hausmüll entsorgen">
+        <path d="M13 14h22l-2 34H15L13 14Zm-4-5h30M19 5h10M20 19v23m8-23v23M5 5l38 46" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 51h12M16 54h16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <p>Elektronik und Batterien nicht über den Hausmüll entsorgen. Bitte bei einer geeigneten Sammelstelle abgeben und örtliche Vorschriften beachten.</p>
+    </div>
+    <div class="footer"><span>Pflege & Wartung</span><span>08</span></div>
+  </article>
+  <article class="page shell-setup">
     <p class="kicker">03 · Erste Schritte</p>
     <h2>Erste Inbetriebnahme</h2>
     <ol class="steps">
-      <li>Uhr trocken und standsicher aufstellen; Sensoröffnung freihalten.</li>
-      <li>Netzteil und Verkabelung prüfen, dann 5-V-Versorgung anschließen. Für die Shell USB-Datenkabel und Terminal verbinden (Seite 3).</li>
+      <li>Uhr trocken und standsicher aufstellen oder mit der vorgesehenen Wandhalterung beziehungsweise über die M4-Montagelöcher befestigen; Sensoröffnung freihalten.</li>
+      <li>Netzteil und Verkabelung prüfen und die 5-V-Versorgung anschließen.
+        <div class="box note">
+          <p><strong>Optionale Konfiguration:</strong> Die serielle Shell benötigen Sie nur, wenn Sie die Uhr konfigurieren möchten. Dafür müssen Sie die Shell vor jeder Konfigurationssitzung erneut verbinden.</p>
+        </div>
+        <p>Die Uhr stellt über USB eine einfache Text-Shell bereit. Ein Terminalprogramm am Computer zeigt diese Eingabeaufforderung an und überträgt Ihre Befehle. Es ist keine separate UART-Verkabelung und keine spezielle Uhren-App erforderlich. Die Shell überträgt keine Uhrzeit automatisch.</p>
+      </li>
+      <li>Uhr mit einem USB-Datenkabel am Computer anschließen. Ein reines Ladekabel reicht nicht aus.</li>
+      <li>In PuTTY oder Tera Term als Verbindungstyp <strong>Serial</strong> auswählen. Unter Windows den COM-Port der Uhr im Geräte-Manager ermitteln. Unter macOS/Linux heißt der Port meist <code>/dev/ttyACM0</code> oder ähnlich.</li>
+      <li class="step-with-settings"><span>Die Verbindungseinstellungen aus dem Kasten rechts übernehmen und die Verbindung öffnen.</span>
+        <div class="box terminal-settings">
+          <p><strong>Serielle Terminal-Einstellungen</strong></p>
+          <p><strong>Verbindung:</strong> Serial (nicht SSH)</p>
+          <p><strong>Port:</strong> COM-Port der Uhr bzw. <code>/dev/ttyACM…</code></p>
+          <p><strong>Baudrate:</strong> 115200 · <strong>Datenbits:</strong> 8</p>
+          <p><strong>Parität:</strong> Keine · <strong>Stoppbits:</strong> 1</p>
+          <p><strong>Flusssteuerung:</strong> Keine</p>
+        </div>
+      </li>
+      <li>Einmal Enter drücken. Bei der Eingabeaufforderung <code>uart:~$</code> können Sie einen Befehl eingeben und mit Enter absenden.</li>
     </ol>
-    <h3>Datum und Uhrzeit einstellen</h3>
-    <p>Shell verbinden (Seite 3), Zeit abfragen und bei Bedarf das aktuelle Datum sowie die Ortszeit eingeben.</p>
-    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM<span>Jahr 2000–2099; Format Jahr-Monat-Tag Stunde:Minute. Die Sekunden werden auf 00 gesetzt.</span></div>
-    <p>Beispiel für den 28. Oktober 2026 um 07:51 Uhr:</p>
-    <div class="cmd">time set 2026-10-28 07:51</div>
-    <p>Standardmäßig gilt UTC+01:00 mit automatischer europäischer Sommerzeit. Intern speichert die Uhr UTC.</p>
-    <h3>Zeitzone auswählen</h3>
-    <p>Nur feste, unterstützte UTC-Offsets sind wählbar. Für Deutschland UTC+01:00 als Normalzeit verwenden.</p>
-    <div class="cmd">time zone list<br>time zone get<br>time zone set UTC+01:00<span>Alle festen Offsets auflisten, die aktuelle Zone anzeigen oder eine Zone auswählen. Die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
-    <h3>Sommerzeit einstellen</h3>
-    <div class="cmd">time dst get<br>time dst set off<br>time dst set on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
-    <p class="small">EU-Umstellung: letzter Sonntag im März und Oktober um 01:00 UTC. Für andere Regionen ausschalten. Die Frühlingslücke wird abgewiesen, bei der doppelten Herbststunde gilt Sommerzeit. Änderungen wirken sofort. Bei Zeitverlust Pufferbatterie prüfen lassen.</p>
+    <p>Mit <strong>help</strong> lassen Sie sich die verfügbaren Shell-Befehle anzeigen. Für Details zu einem Befehl hängen Sie <code>--help</code> an. Die Tab-Taste ergänzt Befehle und Unterbefehle oder zeigt passende Möglichkeiten an.</p>
+    <div class="cmd">help<br>time --help</div>
+    <p class="small">Die USB-Verbindung dient hier als Textkonsole: Sie zeigt die Shell und nimmt Befehle an. Sie ist weder eine automatische Zeitsynchronisierung noch eine allgemeine Dateiübertragung.</p>
     <div class="footer"><span>Erste Inbetriebnahme</span><span>05</span></div>
   </article>
 </section>
@@ -521,12 +545,28 @@
 <!-- Sheet 3, inside: pages 6 and 7. -->
 <section class="sheet">
   <article class="page">
-    <p class="kicker">04 · Anzeige einstellen</p>
+    <p class="kicker">04 · Datum und Uhrzeit</p>
+    <h2>Datum und Uhrzeit</h2>
+    <h3>Zeitzone auswählen</h3>
+    <p>Die Uhr verwendet feste, unterstützte UTC-Offsets. Standardmäßig ist MEZ (UTC+01:00) mit aktivierter automatischer Sommerzeit eingestellt; intern speichert die Uhr UTC.</p>
+    <div class="cmd">time zone list<br>time zone get<br>time zone set UTC+01:00<span>Alle festen Offsets auflisten, die aktuelle Zone anzeigen oder eine Zone auswählen. Die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
+    <h3>Sommerzeit einstellen</h3>
+    <div class="cmd">time dst get<br>time dst set off<br>time dst set on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
+    <p class="small">EU-Umstellung: letzter Sonntag im März und Oktober um 01:00 UTC. Für andere Regionen ausschalten. Die Frühlingslücke wird abgewiesen, bei der doppelten Herbststunde gilt Sommerzeit. Änderungen wirken sofort. Bei Zeitverlust Pufferbatterie prüfen lassen.</p>
+    <h3>Datum und Uhrzeit einstellen</h3>
+    <p>Zeit abfragen und bei Bedarf das aktuelle Datum sowie die Ortszeit eingeben.</p>
+    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM<span>Jahr 2000–2099; Format Jahr-Monat-Tag Stunde:Minute. Die Sekunden werden auf 00 gesetzt.</span></div>
+    <p>Beispiel für den 28. Oktober 2026 um 07:51 Uhr:</p>
+    <div class="cmd">time set 2026-10-28 07:51</div>
+    <div class="footer"><span>Datum und Uhrzeit</span><span>06</span></div>
+  </article>
+  <article class="page">
+    <p class="kicker">05 · Anzeige einstellen</p>
     <h2>Helligkeit und Farbe</h2>
     <h3>Automatische Helligkeit</h3>
     <p>Der Lichtsensor misst etwa alle fünf Sekunden. Zwischen 0 und 1500 lx wird die LED-Helligkeit automatisch zwischen den eingestellten PWM-Grenzen angepasst. Bei hoher LED-Last kann der Stromschutz zusätzlich dimmen.</p>
     <h3>Helligkeitsgrenzen anzeigen oder ändern</h3>
-    <div class="cmd">display brightness get<br>display brightness set 50 200<span>Mit get die aktuellen Grenzen anzeigen; mit set Minimum und Maximum festlegen. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 50 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
+    <div class="cmd">display brightness get<br>display brightness set 2 200<span>Mit get die aktuellen Grenzen anzeigen; mit set Minimum und Maximum festlegen. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 2 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
     <p>Ein höherer Minimalwert hält die Anzeige auch bei Dunkelheit heller; ein niedrigerer Maximalwert begrenzt die Helligkeit am Tag. <strong>0</strong> kann die LEDs vollständig ausschalten.</p>
     <h3>Anzeigefarbe wählen</h3>
     <div class="cmd">display color get<br>display color list<br>display color set cyan<span>Mit get die aktuelle Farbe anzeigen, mit list alle verfügbaren Farben auflisten und mit set eine Farbe wählen. Die Änderung wird sofort angewendet und gespeichert.</span></div>
@@ -539,28 +579,8 @@
       <li><span class="color-swatch swatch-yellow" aria-hidden="true"></span>yellow</li>
       <li><span class="color-swatch swatch-magenta" aria-hidden="true"></span>magenta</li>
     </ul>
-    <p class="small">Die Namen müssen genau wie oben eingegeben werden. Für die Funktionsprüfung bei Anzeigeproblemen siehe die systematische Fehlerhilfe auf Seite 8.</p>
-    <div class="footer"><span>Helligkeit & Farbe</span><span>06</span></div>
-  </article>
-  <article class="page">
-    <p class="kicker">05 · Firmware aktualisieren</p>
-    <h2>Firmware per USB aktualisieren</h2>
-    <p>Für die Aktualisierung benötigen Sie die zur Uhr passende UF2-Datei. Laden Sie sie aus dem Bereich <strong>Releases</strong> des Projektarchivs herunter:</p>
-    <div class="cmd">github.com/AssFactory/SimpleWordClock/releases</div>
-    <ol class="steps">
-      <li>Prüfen Sie, dass die UF2-Datei ausdrücklich für die <strong>Adafruit ItsyBitsy RP2040</strong> vorgesehen ist. Verwenden Sie nur eine vertrauenswürdige Projektversion.</li>
-      <li>Schließen Sie die Uhr mit einem USB-Datenkabel an den Computer an und verbinden Sie die vorgesehene 5-V-Versorgung.</li>
-      <li>Öffnen Sie die serielle Shell. Alternativ: USB trennen, BOOTSEL-Taste gedrückt halten und USB wieder anschließen.</li>
-      <li>Der Computer zeigt das Laufwerk <strong>RPI-RP2</strong> an. Kopieren Sie die heruntergeladene UF2-Datei auf dieses Laufwerk.</li>
-      <li>Warten Sie, bis der Kopiervorgang beendet ist und das Laufwerk verschwindet. Die Uhr startet anschließend mit der neuen Firmware neu.</li>
-    </ol>
-    <div class="cmd">bootsel</div>
-    <div class="box warning">
-      <p><strong>Während des Updates:</strong> USB-Kabel und Stromversorgung nicht trennen. Eine falsche Firmwaredatei kann verhindern, dass die Uhr normal startet.</p>
-    </div>
-    <p>Nach dem Neustart können Sie die Shell erneut verbinden und die installierte Firmwareversion sowie die Uhrzeit prüfen.</p>
-    <div class="cmd">app version<br>time get</div>
-    <div class="footer"><span>Firmware aktualisieren</span><span>07</span></div>
+    <p class="small">Die Namen müssen genau wie oben eingegeben werden. Für die Funktionsprüfung bei Anzeigeproblemen siehe die systematische Fehlerhilfe auf Seite 10.</p>
+    <div class="footer"><span>Helligkeit & Farbe</span><span>07</span></div>
   </article>
 </section>
 
