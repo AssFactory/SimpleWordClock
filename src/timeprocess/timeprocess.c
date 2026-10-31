@@ -4,10 +4,13 @@
 #include <zephyr/drivers/rtc.h>
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/settings/settings.h>
 
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
+
+#include <zephyr/sys/util.h>
 
 #include "timeprocess.h"
 #include "../display/display.h"
@@ -65,6 +68,76 @@ static const enum word_id hour_words[12] = {
 #define RTC_NODE DT_NODELABEL(rtc_ext)
 
 static const struct device *const rtc_dev = DEVICE_DT_GET(RTC_NODE);
+
+struct time_zone_config {
+    int16_t utc_offset_minutes;
+    bool dst_enabled;
+};
+
+struct time_zone_option {
+    const char *name;
+    int16_t utc_offset_minutes;
+};
+
+static const struct time_zone_option time_zone_options[] = {
+    { "UTC-12:00", -720 },
+    { "UTC-11:00", -660 },
+    { "UTC-10:00", -600 },
+    { "UTC-09:30", -570 },
+    { "UTC-09:00", -540 },
+    { "UTC-08:00", -480 },
+    { "UTC-07:00", -420 },
+    { "UTC-06:00", -360 },
+    { "UTC-05:00", -300 },
+    { "UTC-04:00", -240 },
+    { "UTC-03:30", -210 },
+    { "UTC-03:00", -180 },
+    { "UTC-02:00", -120 },
+    { "UTC-01:00", -60 },
+    { "UTC+00:00", 0 },
+    { "UTC+01:00", 60 },
+    { "UTC+02:00", 120 },
+    { "UTC+03:00", 180 },
+    { "UTC+03:30", 210 },
+    { "UTC+04:00", 240 },
+    { "UTC+04:30", 270 },
+    { "UTC+05:00", 300 },
+    { "UTC+05:30", 330 },
+    { "UTC+05:45", 345 },
+    { "UTC+06:00", 360 },
+    { "UTC+06:30", 390 },
+    { "UTC+07:00", 420 },
+    { "UTC+08:00", 480 },
+    { "UTC+08:45", 525 },
+    { "UTC+09:00", 540 },
+    { "UTC+09:30", 570 },
+    { "UTC+10:00", 600 },
+    { "UTC+10:30", 630 },
+    { "UTC+11:00", 660 },
+    { "UTC+12:00", 720 },
+    { "UTC+12:45", 765 },
+    { "UTC+13:00", 780 },
+    { "UTC+14:00", 840 },
+};
+
+static const struct time_zone_option *timeprocess_find_zone_by_offset(
+    int16_t utc_offset_minutes)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(time_zone_options); i++) {
+        if (time_zone_options[i].utc_offset_minutes == utc_offset_minutes) {
+            return &time_zone_options[i];
+        }
+    }
+
+    return NULL;
+}
+
+static struct time_zone_config time_zone_config = {
+    .utc_offset_minutes = 60,
+    .dst_enabled = true,
+};
+
+K_MUTEX_DEFINE(time_zone_mutex);
 
 /* Protects the cached time from concurrent access. */
 K_MUTEX_DEFINE(time_cache_mutex);
@@ -210,8 +283,13 @@ static uint64_t timeprocess_dst_transition_utc(int year, int month)
 }
 
 static bool timeprocess_is_summer_time_utc(const struct rtc_time *utc_time,
-                                           uint64_t utc_seconds)
+                                           uint64_t utc_seconds,
+                                           bool dst_enabled)
 {
+    if (!dst_enabled) {
+        return false;
+    }
+
     int year = utc_time->tm_year + 1900;
     uint64_t summer_time_start = timeprocess_dst_transition_utc(year, 2);
     uint64_t summer_time_end = timeprocess_dst_transition_utc(year, 9);
@@ -219,47 +297,81 @@ static bool timeprocess_is_summer_time_utc(const struct rtc_time *utc_time,
     return utc_seconds >= summer_time_start && utc_seconds < summer_time_end;
 }
 
+static struct time_zone_config timeprocess_get_zone_config(void)
+{
+    struct time_zone_config config;
+
+    k_mutex_lock(&time_zone_mutex, K_FOREVER);
+    config = time_zone_config;
+    k_mutex_unlock(&time_zone_mutex);
+
+    return config;
+}
+
+static int timeprocess_settings_set(const char *name, size_t len,
+                                    settings_read_cb read_cb, void *cb_arg)
+{
+    if (strcmp(name, "zone") == 0) {
+        int16_t utc_offset_minutes;
+
+        if (len != sizeof(utc_offset_minutes)) {
+            return -EINVAL;
+        }
+
+        ssize_t bytes_read = read_cb(cb_arg, &utc_offset_minutes,
+                                     sizeof(utc_offset_minutes));
+        if (bytes_read != sizeof(utc_offset_minutes)) {
+            return bytes_read < 0 ? (int)bytes_read : -EIO;
+        }
+
+        if (timeprocess_find_zone_by_offset(utc_offset_minutes) == NULL) {
+            LOG_WRN("Stored UTC offset %d is no longer supported; using UTC+01:00.",
+                    utc_offset_minutes);
+            return 0;
+        }
+
+        k_mutex_lock(&time_zone_mutex, K_FOREVER);
+        time_zone_config.utc_offset_minutes = utc_offset_minutes;
+        k_mutex_unlock(&time_zone_mutex);
+        return 0;
+    }
+
+    if (strcmp(name, "dst") == 0) {
+        uint8_t dst_enabled;
+
+        if (len != sizeof(dst_enabled)) {
+            return -EINVAL;
+        }
+
+        ssize_t bytes_read = read_cb(cb_arg, &dst_enabled,
+                                     sizeof(dst_enabled));
+        if (bytes_read != sizeof(dst_enabled)) {
+            return bytes_read < 0 ? (int)bytes_read : -EIO;
+        }
+
+        if (dst_enabled > 1U) {
+            return -EINVAL;
+        }
+
+        k_mutex_lock(&time_zone_mutex, K_FOREVER);
+        time_zone_config.dst_enabled = dst_enabled != 0U;
+        k_mutex_unlock(&time_zone_mutex);
+        return 0;
+    }
+
+    return -ENOENT;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(clock, "clock", NULL, timeprocess_settings_set,
+                               NULL, NULL);
+
 static int timeprocess_local_to_utc(const struct rtc_time *local_time,
-                                    struct rtc_time *utc_time)
+                                    struct rtc_time *utc_time,
+                                    const struct time_zone_config *config)
 {
     int ret = timeprocess_validate_datetime(local_time);
-    if (ret != 0 || utc_time == NULL) {
+    if (ret != 0 || utc_time == NULL || config == NULL) {
         return -EINVAL;
-    }
-
-    int year = local_time->tm_year + 1900;
-    int march_last_sunday =
-        timeprocess_days_in_month(year, 2) -
-        (int)(((uint64_t)timeprocess_days_before_year(year) +
-               timeprocess_days_before_month(year, 2) +
-               (uint64_t)timeprocess_days_in_month(year, 2) - 1U + 6U) %
-              7U);
-
-    if (local_time->tm_mon == 2 &&
-        local_time->tm_mday == march_last_sunday &&
-        local_time->tm_hour == 2) {
-        return -EINVAL;
-    }
-
-    bool summer_time = false;
-    if (local_time->tm_mon > 2 && local_time->tm_mon < 9) {
-        summer_time = true;
-    } else if (local_time->tm_mon == 2) {
-        summer_time = local_time->tm_mday > march_last_sunday ||
-                      (local_time->tm_mday == march_last_sunday &&
-                       local_time->tm_hour >= 3);
-    } else if (local_time->tm_mon == 9) {
-        int october_last_sunday =
-            timeprocess_days_in_month(year, 9) -
-            (int)(((uint64_t)timeprocess_days_before_year(year) +
-                   timeprocess_days_before_month(year, 9) +
-                   (uint64_t)timeprocess_days_in_month(year, 9) - 1U +
-                   6U) %
-                  7U);
-
-        summer_time = local_time->tm_mday < october_last_sunday ||
-                      (local_time->tm_mday == october_last_sunday &&
-                       local_time->tm_hour < 3);
     }
 
     uint64_t local_seconds;
@@ -268,17 +380,40 @@ static int timeprocess_local_to_utc(const struct rtc_time *local_time,
         return ret;
     }
 
-    uint64_t offset = summer_time ? 7200U : 3600U;
-    if (local_seconds < offset) {
-        return -EINVAL;
+    int32_t standard_offset_seconds =
+        (int32_t)config->utc_offset_minutes * 60;
+    size_t offset_count = config->dst_enabled ? 2U : 1U;
+
+    for (size_t i = 0; i < offset_count; i++) {
+        bool candidate_is_dst = config->dst_enabled && i == 0U;
+        int32_t offset = standard_offset_seconds +
+                         (candidate_is_dst ? 3600 : 0);
+        uint64_t utc_seconds;
+
+        if (offset >= 0) {
+            if (local_seconds < (uint32_t)offset) {
+                continue;
+            }
+            utc_seconds = local_seconds - (uint32_t)offset;
+        } else {
+            utc_seconds = local_seconds + (uint32_t)(-offset);
+        }
+
+        struct rtc_time candidate_utc;
+        timeprocess_seconds_to_datetime(utc_seconds, &candidate_utc);
+        if (candidate_utc.tm_year + 1900 > 2099) {
+            continue;
+        }
+
+        bool is_dst = timeprocess_is_summer_time_utc(
+            &candidate_utc, utc_seconds, config->dst_enabled);
+        if (is_dst == candidate_is_dst) {
+            *utc_time = candidate_utc;
+            return 0;
+        }
     }
 
-    timeprocess_seconds_to_datetime(local_seconds - offset, utc_time);
-    if (utc_time->tm_year + 1900 < 2000) {
-        return -EINVAL;
-    }
-
-    return 0;
+    return -EINVAL;
 }
 
 static void timeprocess_cache_update(const struct rtc_time *time)
@@ -323,12 +458,29 @@ static int timeprocess_read_rtc(void)
         uint64_t utc_seconds;
         ret = timeprocess_datetime_to_seconds(&utc_time, &utc_seconds);
         if (ret == 0) {
-            bool summer_time =
-                timeprocess_is_summer_time_utc(&utc_time, utc_seconds);
+            struct time_zone_config config =
+                timeprocess_get_zone_config();
+            bool summer_time = timeprocess_is_summer_time_utc(
+                &utc_time, utc_seconds, config.dst_enabled);
             struct rtc_time local_time;
+            int32_t offset_seconds =
+                (int32_t)config.utc_offset_minutes * 60 +
+                (summer_time ? 3600 : 0);
 
-            timeprocess_seconds_to_datetime(
-                utc_seconds + (summer_time ? 7200U : 3600U), &local_time);
+            if (offset_seconds >= 0) {
+                utc_seconds += (uint32_t)offset_seconds;
+            } else {
+                uint32_t offset = (uint32_t)(-offset_seconds);
+                if (utc_seconds < offset) {
+                    return -EINVAL;
+                }
+                utc_seconds -= offset;
+            }
+
+            timeprocess_seconds_to_datetime(utc_seconds, &local_time);
+            if (local_time.tm_year + 1900 > 2099) {
+                return -EINVAL;
+            }
             local_time.tm_isdst = summer_time ? 1 : 0;
             timeprocess_cache_update(&local_time);
         }
@@ -348,7 +500,8 @@ int timeprocess_set_time(const struct rtc_time *time)
     }
 
     struct rtc_time utc_time;
-    int ret = timeprocess_local_to_utc(time, &utc_time);
+    struct time_zone_config config = timeprocess_get_zone_config();
+    int ret = timeprocess_local_to_utc(time, &utc_time, &config);
     if (ret != 0) {
         return ret;
     }
@@ -462,10 +615,121 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
+static int cmd_time_zone(const struct shell *sh, size_t argc, char **argv)
+{
+    if (argc == 1U) {
+        struct time_zone_config config = timeprocess_get_zone_config();
+        const struct time_zone_option *zone =
+            timeprocess_find_zone_by_offset(config.utc_offset_minutes);
+        if (zone == NULL) {
+            shell_error(sh, "The configured UTC offset is not supported.");
+            return -EINVAL;
+        }
+
+        shell_print(sh, "%s; EU daylight saving: %s.",
+                    zone->name, config.dst_enabled ? "on" : "off");
+        return 0;
+    }
+
+    if (argc != 2U) {
+        shell_error(sh, "Usage: time zone UTC+01:00; use 'time zones' to list choices.");
+        return -EINVAL;
+    }
+
+    const struct time_zone_option *zone = NULL;
+    for (size_t i = 0; i < ARRAY_SIZE(time_zone_options); i++) {
+        if (strcmp(argv[1], time_zone_options[i].name) == 0) {
+            zone = &time_zone_options[i];
+            break;
+        }
+    }
+
+    if (zone == NULL) {
+        shell_error(sh, "Unsupported UTC zone. Use 'time zones' to list choices.");
+        return -EINVAL;
+    }
+
+    int16_t stored_offset = zone->utc_offset_minutes;
+    int ret = settings_save_one("clock/zone", &stored_offset,
+                                sizeof(stored_offset));
+    if (ret < 0) {
+        shell_error(sh, "Could not save the UTC offset (error %d).", ret);
+        return ret;
+    }
+
+    k_mutex_lock(&time_zone_mutex, K_FOREVER);
+    time_zone_config.utc_offset_minutes = stored_offset;
+    k_mutex_unlock(&time_zone_mutex);
+
+    shell_print(sh, "Time zone set to %s.", zone->name);
+    ret = timeprocess_refresh_display();
+    if (ret < 0) {
+        shell_error(sh, "Offset saved, but display refresh failed (error %d).",
+                    ret);
+    }
+
+    return ret;
+}
+
+static int cmd_time_zones(const struct shell *sh, size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    shell_print(sh, "Available fixed UTC offsets:");
+    for (size_t i = 0; i < ARRAY_SIZE(time_zone_options); i++) {
+        shell_print(sh, "%s", time_zone_options[i].name);
+    }
+
+    return 0;
+}
+
+static int cmd_time_dst(const struct shell *sh, size_t argc, char **argv)
+{
+    if (argc == 1U) {
+        struct time_zone_config config = timeprocess_get_zone_config();
+        shell_print(sh, "EU daylight saving is %s.",
+                    config.dst_enabled ? "on" : "off");
+        return 0;
+    }
+
+    if (argc != 2U ||
+        (strcmp(argv[1], "on") != 0 && strcmp(argv[1], "off") != 0)) {
+        shell_error(sh, "Usage: time dst [on|off].");
+        return -EINVAL;
+    }
+
+    uint8_t dst_enabled = strcmp(argv[1], "on") == 0 ? 1U : 0U;
+    int ret = settings_save_one("clock/dst", &dst_enabled,
+                                sizeof(dst_enabled));
+    if (ret < 0) {
+        shell_error(sh, "Could not save the daylight-saving setting (error %d).",
+                    ret);
+        return ret;
+    }
+
+    k_mutex_lock(&time_zone_mutex, K_FOREVER);
+    time_zone_config.dst_enabled = dst_enabled != 0U;
+    k_mutex_unlock(&time_zone_mutex);
+
+    shell_print(sh, "EU daylight saving set to %s.",
+                dst_enabled != 0U ? "on" : "off");
+    ret = timeprocess_refresh_display();
+    if (ret < 0) {
+        shell_error(sh, "DST setting saved, but display refresh failed (error %d).",
+                    ret);
+    }
+
+    return ret;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(
     rtc_commands,
     SHELL_CMD(get, NULL, "Read date and time", cmd_rtc_get),
     SHELL_CMD(set, NULL, "Set date and time (YYYY-MM-DD HH:MM)", cmd_rtc_set),
+    SHELL_CMD(zone, NULL, "Get/set a fixed UTC offset", cmd_time_zone),
+    SHELL_CMD(zones, NULL, "List available fixed UTC offsets", cmd_time_zones),
+    SHELL_CMD(dst, NULL, "Get/set EU daylight-saving rule", cmd_time_dst),
     SHELL_SUBCMD_SET_END
 );
 

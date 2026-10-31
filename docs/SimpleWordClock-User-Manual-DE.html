@@ -482,37 +482,36 @@
     <p>Leuchten alle LEDs, aber Wörter fehlen oder sitzen falsch, Zifferblatt und LED-Zuordnung prüfen lassen.</p>
     <h3>4. Helligkeit und Farbe prüfen</h3>
     <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
-    <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. <strong>display brightness</strong> zeigt die PWM-Grenzen (Einstellung: Seite 6).</p>
-    <p>Falsche Farbe mit <strong>display color</strong> abfragen; die Rückmeldung nennt die aktive Farbe. Farben einstellen: Seite 6.</p>
+    <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. Die PWM-Grenzen wie auf Seite 6 beschrieben prüfen.</p>
+    <div class="cmd">display brightness</div>
+    <p>Falsche Farbe? Die aktive Farbe wie auf Seite 6 beschrieben abfragen.</p>
+    <div class="cmd">display color</div>
     <h3>5. Uhrzeit und Shell prüfen</h3>
-    <p>Mit <strong>time get</strong> prüfen und Uhrzeit bei Bedarf neu setzen (Seite 5). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen. Ohne Shell-Prompt Datenkabel, COM-Port sowie Terminaleinstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung.</p>
-    <p class="small">Für Hilfe die Firmwareversion mit <strong>app version</strong> auslesen und zusammen mit dem Fehlerbild angeben.</p>
+    <p>Uhrzeit prüfen und bei Bedarf neu setzen (Seite 5). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen. Ohne Shell-Prompt Datenkabel, COM-Port sowie Terminaleinstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung.</p>
+    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM</div>
+    <p class="small">Für Hilfe die Firmwareversion auslesen und zusammen mit dem Fehlerbild angeben.</p>
+    <div class="cmd">app version</div>
     <div class="footer"><span>Fehlerhilfe</span><span>08</span></div>
   </article>
   <article class="page">
     <p class="kicker">03 · Erste Schritte</p>
     <h2>Erste Inbetriebnahme</h2>
     <ol class="steps">
-      <li>Uhr standsicher und trocken aufstellen. Sensoröffnung nicht verdecken.</li>
-      <li>Netzteil und Verkabelung prüfen; nur die für das Gerät vorgesehene Versorgung verwenden.</li>
-      <li>Die 5-V-Versorgung anschließen. Für Shell-Befehle zusätzlich ein USB-Datenkabel und eine serielle Terminalverbindung verwenden (Seite 3).</li>
+      <li>Uhr trocken und standsicher aufstellen; Sensoröffnung freihalten.</li>
+      <li>Netzteil und Verkabelung prüfen, dann 5-V-Versorgung anschließen. Für die Shell USB-Datenkabel und Terminal verbinden (Seite 3).</li>
     </ol>
-    <div class="box warning">
-      <p><strong>Wichtig:</strong> USB stellt die Text-Shell bereit und ersetzt nicht die vorgesehene Stromversorgung der Uhr und LEDs.</p>
-    </div>
     <h3>Datum und Uhrzeit einstellen</h3>
-    <p>Öffnen Sie die serielle Shell (Seite 3) und lesen Sie die gespeicherte Zeit aus:</p>
-    <div class="cmd">time get<span>Zeigt Datum und Uhrzeit der Echtzeituhr.</span></div>
-    <p>Zum Einstellen das aktuelle Datum und die Ortszeit im Format Jahr-Monat-Tag Stunde:Minute eingeben:</p>
-    <div class="box">
-      <p><strong>Beispiel:</strong> 28. Oktober 2026, 07:51 Uhr</p>
-      <p class="cmd" style="margin-bottom:0">time set 2026-10-28 07:51</p>
-    </div>
-    <p>Jahr: 2000 bis 2099; Stunde: 00 bis 23; Minute: 00 bis 59. Die Sekunden werden auf 00 gesetzt. Ersetzen Sie das Beispiel durch das aktuelle Datum und die Ortszeit. In Mitteleuropa wechselt die Uhr automatisch zwischen Winter- und Sommerzeit. Nach einem Firmware-Update die Ortszeit neu setzen; intern speichert die Uhr UTC.</p>
-    <p>Mit <strong>time get</strong> kontrollieren, ob die Einstellung übernommen wurde. Die Uhr läuft danach selbstständig weiter.</p>
-    <div class="box note">
-      <p><strong>Uhr verliert die Zeit?</strong> Falls das Gerät eine Pufferbatterie verwendet, prüfen Sie, ob sie richtig eingesetzt und funktionsfähig ist. Beachten Sie die Kennzeichnung am Gerät.</p>
-    </div>
+    <p>Shell verbinden (Seite 3), Zeit abfragen und bei Bedarf das aktuelle Datum sowie die Ortszeit eingeben.</p>
+    <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM<span>Jahr 2000–2099; Format Jahr-Monat-Tag Stunde:Minute. Die Sekunden werden auf 00 gesetzt.</span></div>
+    <p>Beispiel für den 28. Oktober 2026 um 07:51 Uhr:</p>
+    <div class="cmd">time set 2026-10-28 07:51</div>
+    <p>Standardmäßig gilt UTC+01:00 mit automatischer europäischer Sommerzeit. Intern speichert die Uhr UTC.</p>
+    <h3>Zeitzone auswählen</h3>
+    <p>Nur feste, unterstützte UTC-Offsets sind wählbar. Für Deutschland UTC+01:00 als Normalzeit verwenden.</p>
+    <div class="cmd">time zones<br>time zone UTC+01:00<span>Der erste Befehl listet alle verfügbaren Offsets auf. Der zweite wählt den gewünschten festen Offset; die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
+    <h3>Sommerzeit einstellen</h3>
+    <div class="cmd">time dst<br>time dst off<br>time dst on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
+    <p class="small">EU-Umstellung: letzter Sonntag im März und Oktober um 01:00 UTC. Für andere Regionen ausschalten. Die Frühlingslücke wird abgewiesen, bei der doppelten Herbststunde gilt Sommerzeit. Änderungen wirken sofort. Bei Zeitverlust Pufferbatterie prüfen lassen.</p>
     <div class="footer"><span>Erste Inbetriebnahme</span><span>05</span></div>
   </article>
 </section>
@@ -549,14 +548,16 @@
     <ol class="steps">
       <li>Prüfen Sie, dass die UF2-Datei ausdrücklich für die <strong>Adafruit ItsyBitsy RP2040</strong> vorgesehen ist. Verwenden Sie nur eine vertrauenswürdige Projektversion.</li>
       <li>Schließen Sie die Uhr mit einem USB-Datenkabel an den Computer an und verbinden Sie die vorgesehene 5-V-Versorgung.</li>
-      <li>Öffnen Sie die serielle Shell und geben Sie <strong>bootsel</strong> ein. Alternativ: USB trennen, BOOTSEL-Taste gedrückt halten und USB wieder anschließen.</li>
+      <li>Öffnen Sie die serielle Shell. Alternativ: USB trennen, BOOTSEL-Taste gedrückt halten und USB wieder anschließen.</li>
       <li>Der Computer zeigt das Laufwerk <strong>RPI-RP2</strong> an. Kopieren Sie die heruntergeladene UF2-Datei auf dieses Laufwerk.</li>
       <li>Warten Sie, bis der Kopiervorgang beendet ist und das Laufwerk verschwindet. Die Uhr startet anschließend mit der neuen Firmware neu.</li>
     </ol>
+    <div class="cmd">bootsel</div>
     <div class="box warning">
       <p><strong>Während des Updates:</strong> USB-Kabel und Stromversorgung nicht trennen. Eine falsche Firmwaredatei kann verhindern, dass die Uhr normal startet.</p>
     </div>
-    <p>Nach dem Neustart können Sie die Shell erneut verbinden und mit <strong>app version</strong> die installierte Version prüfen. Mit <strong>time get</strong> kontrollieren Sie außerdem die Uhrzeit.</p>
+    <p>Nach dem Neustart können Sie die Shell erneut verbinden und die installierte Firmwareversion sowie die Uhrzeit prüfen.</p>
+    <div class="cmd">app version<br>time get</div>
     <div class="footer"><span>Firmware aktualisieren</span><span>07</span></div>
   </article>
 </section>
