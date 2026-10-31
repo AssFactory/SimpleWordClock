@@ -48,8 +48,9 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir /workspace \
             --env HOME=/tmp \
+            --entrypoint /bin/sh \
             ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.4 \
-            sh -c 'west init -l . && west update && west build -b adafruit_itsybitsy_rp2040 -p always'
+            -c 'cd /workspace && west init -l . && west update && west build -b adafruit_itsybitsy_rp2040 -p always'
 
       - name: Verify firmware image
         run: test -s build/zephyr/zephyr.uf2
