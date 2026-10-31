@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title description">
+  <title id="title">Clock photo coming soon</title>
+  <desc id="description">Placeholder for a photo of the finished Simple Word Clock.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f4f6f7"/>
+      <stop offset="1" stop-color="#e7ecef"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="url(#background)"/>
+  <rect x="2" y="2" width="1196" height="516" rx="26" fill="none" stroke="#cbd2d6" stroke-width="4"/>
+  <circle cx="600" cy="210" r="118" fill="#18232b"/>
+  <circle cx="600" cy="210" r="101" fill="#24323b" stroke="#65747e" stroke-width="3"/>
+  <g fill="#e2231a" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" text-anchor="middle">
+    <text x="600" y="144">ES ISCH</text>
+    <text x="600" y="176">VIERTEL</text>
+    <text x="600" y="208">HALB</text>
+    <text x="600" y="240">ZEIT</text>
+    <text x="600" y="272">WORD CLOCK</text>
+  </g>
+  <text x="600" y="405" fill="#18232b" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" text-anchor="middle">CLOCK PHOTO COMING SOON</text>
+  <text x="600" y="445" fill="#596873" font-family="Arial, Helvetica, sans-serif" font-size="18" text-anchor="middle">Replace this placeholder with a photo of the finished clock.</text>
+</svg>

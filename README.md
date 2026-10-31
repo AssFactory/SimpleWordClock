@@ -1,160 +1,54 @@
-# 🕒 Simple Word Clock (Swabian Edition)
+<div align="center">
 
-A modern, embedded German word clock built on **Zephyr RTOS**, featuring a **Swabian dialect front matrix** ("Viertel x", "Halb x", etc.).
+# Simple Word Clock
 
-Designed for high-precision timekeeping, automatic brightness adjustment, and addressable RGB LED control, making it an ideal DIY wall or desktop clock.
+**A Swabian word clock, built with Zephyr RTOS.**
 
----
+[Features](#features) · [Hardware](#hardware) · [Getting started](#getting-started) · [Documentation](#documentation)
 
-## ✨ Features
+</div>
 
-* **Swabian Dialect Matrix:** Unique layout displaying time in authentic Swabian phrasing.
-* **Hardware Flexible (Zephyr RTOS):** Highly portable across various microcontrollers (ESP32, STM32, NXP, etc.) thanks to Zephyr's Devicetree abstraction.
-* **Automated Brightness:** Features a **BH1750** ambient light sensor to seamlessly adjust LED brightness according to room lighting.
-* **Animated Word Changes:** A virtual vertical sweep replaces the old phrase letter by letter, with no visible bar and soft fades on changing letters.
-* **Precise Timekeeping:** High-precision **DS3231 RTC** module with battery backup ensures reliable timekeeping across power interruptions.
-* **Addressable LED Matrix:** Driven by **WS2812B** RGB LEDs (60 LEDs/m density).
-* **Robust Firmware:** Built on **Zephyr RTOS 4.4.2**.
+## Project photos
 
-### Brightness controls
+<!-- Replace these placeholders with photos of the finished clock when available. -->
+<p align="center">
+  <img src="docs/readme-clock-placeholder.svg" alt="Clock photo placeholder" width="72%">
+</p>
+<p align="center">
+  <img src="docs/readme-detail-placeholder.svg" alt="Hardware detail photo placeholder" width="48%">
+</p>
 
-The minimum and maximum LED PWM brightness can be read and configured through
-the serial shell. Values range from 0 to 255, and the settings are saved across
-reboots:
+## Overview
 
-```text
-display brightness get
-display brightness set 50 200
-display color get
-display color list
-display color set cyan
-display pixels
+Simple Word Clock is an open-source LED clock that displays the time in Swabian phrasing. Its firmware is built on Zephyr RTOS and runs on the Adafruit ItsyBitsy RP2040.
+
+## Features
+
+- Swabian word-clock display with animated transitions
+- Automatic brightness adjustment using an ambient light sensor
+- Adjustable brightness and display color
+- Battery-backed real-time clock with configurable time zone and daylight saving
+- USB serial shell for configuration and diagnostics
+
+## Hardware
+
+The current build uses an Adafruit ItsyBitsy RP2040, a WS2812B LED strip, a DS3231 real-time clock, and a BH1750 light sensor.
+
+## Getting started
+
+Set up the [Zephyr development environment](https://docs.zephyrproject.org/latest/develop/getting_started/index.html), clone this repository, then build for the supported board:
+
+```sh
+west build -b adafruit_itsybitsy_rp2040
 ```
 
-Use `get` to read a setting and `set` to change it. Brightness values range
-from 0 to 255.
+For firmware releases, see the [GitHub Releases](../../releases).
 
-### Time zone and daylight saving
+## Documentation
 
-The RTC stores UTC. The displayed local time uses a configurable UTC offset
-selected from a fixed list and, by default, the European daylight-saving
-schedule. Both settings are saved across reboots:
+- [User manual (PDF)](docs/SimpleWordClock-User-Manual-A4-Booklet-DE.pdf)
+- [User manual (HTML)](docs/SimpleWordClock-User-Manual-DE.html)
 
-```text
-time zone list
-time zone get
-time zone set UTC+01:00
-time dst get
-time dst set off
-time dst set on
-```
+## License
 
-The first command lists the supported fixed UTC offsets. Select the zone's
-**standard-time** offset, not its summer-time
-offset. The automatic rule switches on the last Sunday in March and off on the
-last Sunday in October (at 01:00 UTC). It is intended for regions following
-the European rule; disable it for regions that do not. A changed setting is
-applied immediately to the existing UTC clock. Use this command only if the
-RTC itself needs correction; enter the local time for the configured zone:
-
-```text
-time get
-time set YYYY-MM-DD HH:MM
-```
-
----
-
-## 🖨️ 3D Printed Parts & Enclosure
-
-The enclosure, front matrix grid, and diffuser plates are optimized for 3D printing.
-
-* 📐 **STL Files:** Download printable files from the [Releases](../../releases) section.
-* **Material Recommendation:** **PETG** is highly recommended for mechanical stability and durability.
-  * *Tested Setup:* Black PETG (chassis & matrix grid) + transparent PETG (diffuser layer).
-
----
-
-## 🛠️ Bill of Materials (BOM)
-
-### Electronics & Hardware
-
-| Component | Description | Notes / Selection Rationale |
-| :--- | :--- | :--- |
-| **Adafruit ItsyBitsy RP2040** | Main microcontroller board running Zephyr RTOS. | **Selected because** it includes an onboard **74HCT125 level shifter**, which is highly recommended for driving the required 5V logic signal of WS2812B LEDs without extra components. |
-| **WS2812B LED Strip** | 60 LEDs/m density (~104 LEDs / approx. 2 meters needed). | Required |
-| **DS3231 RTC Module** | High-precision I2C real-time clock with coin cell backup. | Required |
-| **BH1750 Sensor** | Digital ambient light sensor (I2C interface). | Required |
-| **Fuse Holder & Fuse** | Panel-mount inline fuse holder for power safety protection. | Required |
-| **DC Jack Panel Mount** | Standard 5.5mm x 2.1mm DC barrel jack for 5V power supply. | Required |
-| **Acrylic Front Plate** | Approx. 300 mm diameter clear/smoked acrylic panel. | Optional |
-| **Mirrored Window Film** | One-way mirror or window tint film for contrast enhancement. | Optional |
-
----
-
-## 🔌 Hardware Connections & Pinout
-
-Standard signal wiring as configured in the Zephyr Devicetree:
-
-| Peripheral | Module Pin | Board Pin | Protocol / Notes |
-| :--- | :--- | :--- | :--- |
-| **DS3231 RTC** | SDA / SCL | I2C0 SDA / SCL | Shared I2C Bus |
-| **BH1750 Sensor** | SDA / SCL | I2C0 SDA / SCL | Shared I2C Bus |
-| **WS2812B Strip** | Data Input | Pin 5 (5V Logic Out) | Driven directly via the onboard level shifter |
-| **Power Input** | 5V / GND | 5V / GND | Powered via DC Jack & fuse |
-
----
-
-## 💻 Development Environment & Build
-
-This project runs on **Zephyr RTOS 4.4.2**, managed using **West** and **CMake** (T2 Application Repository topology).
-
-### Prerequisites
-
-Follow the official [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) to set up host tools (Python, CMake, Ninja, Git, Device Tree Compiler, and the Zephyr SDK toolchain) for Windows, macOS, or Linux.
-
-### Setup & Build Steps
-
-1. **Clone the Application Repository**
-   ```bash
-   git clone https://github.com/AssFactory/SimpleWordClock.git
-   ```
-
-2. **Create & Activate Python Virtual Environment**
-   ```bash
-   python -m venv .venv
-   source .venv/Scripts/activate  # On Linux/macOS: source .venv/bin/activate
-   ```
-
-3. **Install West & Initialize Workspace**
-   ```bash
-   python -m pip install west
-   west init -l
-   west update
-   ```
-
-4. **Install Python Dependencies**
-   ```bash
-   west packages pip --install
-   ```
-
-5. **Build Firmware**
-   ```bash
-   west build -b adafruit_itsybitsy_rp2040 -p always
-   ```
-
-6. **Flash Target**
-   Connect the board in bootloader mode (hold the `BOOTSEL` button while plugging in USB)
-   ```bash
-   west flash
-   ```
----
-
-## 🤝 Contributing
-
-Contributions, bug reports, and feature requests are welcome! Feel free to check out the [issues page](../../issues) or submit a pull request.
-
----
-
-## 📝 License
-
-This project is open-source software licensed under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE).
