@@ -615,24 +615,27 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
-static int cmd_time_zone(const struct shell *sh, size_t argc, char **argv)
+static int cmd_time_zone_get(const struct shell *sh, size_t argc, char **argv)
 {
-    if (argc == 1U) {
-        struct time_zone_config config = timeprocess_get_zone_config();
-        const struct time_zone_option *zone =
-            timeprocess_find_zone_by_offset(config.utc_offset_minutes);
-        if (zone == NULL) {
-            shell_error(sh, "The configured UTC offset is not supported.");
-            return -EINVAL;
-        }
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
-        shell_print(sh, "%s; EU daylight saving: %s.",
-                    zone->name, config.dst_enabled ? "on" : "off");
-        return 0;
+    struct time_zone_config config = timeprocess_get_zone_config();
+    const struct time_zone_option *zone =
+        timeprocess_find_zone_by_offset(config.utc_offset_minutes);
+    if (zone == NULL) {
+        shell_error(sh, "The configured UTC offset is not supported.");
+        return -EINVAL;
     }
 
+    shell_print(sh, "%s.", zone->name);
+    return 0;
+}
+
+static int cmd_time_zone_set(const struct shell *sh, size_t argc, char **argv)
+{
     if (argc != 2U) {
-        shell_error(sh, "Usage: time zone UTC+01:00; use 'time zones' to list choices.");
+        shell_error(sh, "Usage: time zone set UTC+01:00.");
         return -EINVAL;
     }
 
@@ -645,7 +648,7 @@ static int cmd_time_zone(const struct shell *sh, size_t argc, char **argv)
     }
 
     if (zone == NULL) {
-        shell_error(sh, "Unsupported UTC zone. Use 'time zones' to list choices.");
+        shell_error(sh, "Unsupported UTC zone. Use 'time zone list' to list choices.");
         return -EINVAL;
     }
 
@@ -671,7 +674,7 @@ static int cmd_time_zone(const struct shell *sh, size_t argc, char **argv)
     return ret;
 }
 
-static int cmd_time_zones(const struct shell *sh, size_t argc, char **argv)
+static int cmd_time_zone_list(const struct shell *sh, size_t argc, char **argv)
 {
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
@@ -684,18 +687,22 @@ static int cmd_time_zones(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
-static int cmd_time_dst(const struct shell *sh, size_t argc, char **argv)
+static int cmd_time_dst_get(const struct shell *sh, size_t argc, char **argv)
 {
-    if (argc == 1U) {
-        struct time_zone_config config = timeprocess_get_zone_config();
-        shell_print(sh, "EU daylight saving is %s.",
-                    config.dst_enabled ? "on" : "off");
-        return 0;
-    }
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
+    struct time_zone_config config = timeprocess_get_zone_config();
+    shell_print(sh, "EU daylight saving is %s.",
+                config.dst_enabled ? "on" : "off");
+    return 0;
+}
+
+static int cmd_time_dst_set(const struct shell *sh, size_t argc, char **argv)
+{
     if (argc != 2U ||
         (strcmp(argv[1], "on") != 0 && strcmp(argv[1], "off") != 0)) {
-        shell_error(sh, "Usage: time dst [on|off].");
+        shell_error(sh, "Usage: time dst set <on|off>.");
         return -EINVAL;
     }
 
@@ -724,12 +731,29 @@ static int cmd_time_dst(const struct shell *sh, size_t argc, char **argv)
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
+    time_zone_commands,
+    SHELL_CMD(get, NULL, "Get the UTC offset", cmd_time_zone_get),
+    SHELL_CMD_ARG(set, NULL, "Set a fixed UTC offset", cmd_time_zone_set,
+                  1, 1),
+    SHELL_CMD(list, NULL, "List available fixed UTC offsets",
+              cmd_time_zone_list),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    time_dst_commands,
+    SHELL_CMD(get, NULL, "Get daylight-saving status", cmd_time_dst_get),
+    SHELL_CMD_ARG(set, NULL, "Enable or disable EU daylight saving",
+                  cmd_time_dst_set, 1, 1),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
     rtc_commands,
     SHELL_CMD(get, NULL, "Read date and time", cmd_rtc_get),
     SHELL_CMD(set, NULL, "Set date and time (YYYY-MM-DD HH:MM)", cmd_rtc_set),
-    SHELL_CMD(zone, NULL, "Get/set a fixed UTC offset", cmd_time_zone),
-    SHELL_CMD(zones, NULL, "List available fixed UTC offsets", cmd_time_zones),
-    SHELL_CMD(dst, NULL, "Get/set EU daylight-saving rule", cmd_time_dst),
+    SHELL_CMD(zone, &time_zone_commands, "Time zone controls", NULL),
+    SHELL_CMD(dst, &time_dst_commands, "Daylight-saving controls", NULL),
     SHELL_SUBCMD_SET_END
 );
 

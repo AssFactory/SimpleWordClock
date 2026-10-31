@@ -553,9 +553,9 @@ static void display_led_test_handler(struct k_work *work)
 
 finished:
     if (test_failed) {
-        LOG_ERR("LED test failed.");
+        LOG_ERR("Pixel test failed.");
     } else {
-        LOG_INF("LED test completed.");
+            LOG_INF("Pixel test completed.");
     }
 
     k_mutex_unlock(&pixel_buffer_lock);
@@ -563,12 +563,13 @@ finished:
     k_sem_give(&led_test_done);
 }
 
-static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
-    
+static int cmd_display_pixels(const struct shell *sh, size_t argc,
+                              char **argv)
+{
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    shell_print(sh, "Starting LED test.");
+    shell_print(sh, "Starting pixel test.");
 
     /* Clear a possible leftover completion signal */
     k_sem_reset(&led_test_done);
@@ -577,28 +578,27 @@ static int cmd_led_test(const struct shell *sh, size_t argc, char **argv){
                                  &display_led_test_work);
 
     if (ret < 0) {
-        LOG_ERR("Could not submit the LED test (error %d).", ret);
+        LOG_ERR("Could not submit the pixel test (error %d).", ret);
         return ret;
     }
 
     ret = k_sem_take(&led_test_done, K_FOREVER);
 
     if (ret != 0) {
-    shell_error(sh, "Could not wait for the LED test to finish (error %d).",
-                ret);
-    return ret;
-}
+        shell_error(sh, "Could not wait for the pixel test to finish "
+                    "(error %d).", ret);
+        return ret;
+    }
 
-ret = timeprocess_refresh_display();
-if (ret < 0) {
-    shell_error(sh, "Could not refresh the clock after the LED test "
-                "(error %d).",
-                ret);
-    return ret;
-}
+    ret = timeprocess_refresh_display();
+    if (ret < 0) {
+        shell_error(sh, "Could not refresh the clock after the pixel test "
+                    "(error %d).", ret);
+        return ret;
+    }
 
-shell_print(sh, "LED test completed.");
-return 0;
+    shell_print(sh, "Pixel test completed.");
+    return 0;
 }
 
 static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
@@ -697,22 +697,44 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
     return ret;
 }
 
-static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
+static int cmd_display_color_get(const struct shell *sh, size_t argc,
+                                char **argv)
 {
-    if (argc == 1) {
-        enum display_color color;
-        int ret = display_get_color(&color);
-        if (ret != 0) {
-            shell_error(sh, "Could not get the display color (error %d).",
-                        ret);
-            return ret;
-        }
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
-        shell_print(sh, "Display color: %s.",
-                    display_color_name(color));
-        shell_print(sh, "Available colors: white, red, blue, green, cyan, "
-                    "yellow, magenta.");
-        return 0;
+    enum display_color color;
+    int ret = display_get_color(&color);
+    if (ret != 0) {
+        shell_error(sh, "Could not get the display color (error %d).", ret);
+        return ret;
+    }
+
+    shell_print(sh, "Display color: %s.", display_color_name(color));
+    return 0;
+}
+
+static int cmd_display_color_list(const struct shell *sh, size_t argc,
+                                  char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    shell_print(sh, "Available colors:");
+    for (enum display_color color = DISPLAY_COLOR_WHITE;
+         color < DISPLAY_COLOR_COUNT; color++) {
+        shell_print(sh, "%s", display_color_name(color));
+    }
+
+    return 0;
+}
+
+static int cmd_display_color_set(const struct shell *sh, size_t argc,
+                                char **argv)
+{
+    if (argc != 2U) {
+        shell_error(sh, "Usage: display color set <color>.");
+        return -EINVAL;
     }
 
     enum display_color color;
@@ -723,8 +745,8 @@ static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
     }
 
     if (color == DISPLAY_COLOR_COUNT) {
-        shell_error(sh, "Unknown color '%s'. Available colors: white, red, "
-                    "blue, green, cyan, yellow, magenta.",
+        shell_error(sh, "Unknown color '%s'. Use 'display color list' "
+                    "to list available colors.",
                     argv[1]);
         return -EINVAL;
     }
@@ -745,27 +767,32 @@ static int cmd_display_color(const struct shell *sh, size_t argc, char **argv)
     return 0;
 }
 
-static int cmd_display_brightness(const struct shell *sh, size_t argc,
-                                 char **argv)
+static int cmd_display_brightness_get(const struct shell *sh, size_t argc,
+                                     char **argv)
 {
-    if (argc == 1) {
-        uint8_t min;
-        uint8_t max;
-        int ret = display_get_brightness_limits(&min, &max);
-        if (ret != 0) {
-            shell_error(sh, "Could not get the display brightness limits "
-                        "(error %d).",
-                        ret);
-            return ret;
-        }
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
-        shell_print(sh, "Display brightness PWM limits: min=%u, max=%u.",
-                    (unsigned int)min, (unsigned int)max);
-        return 0;
+    uint8_t min;
+    uint8_t max;
+    int ret = display_get_brightness_limits(&min, &max);
+    if (ret != 0) {
+        shell_error(sh, "Could not get the display brightness limits "
+                    "(error %d).",
+                    ret);
+        return ret;
     }
 
-    if (argc != 3) {
-        shell_error(sh, "Usage: display brightness [<min> <max>].");
+    shell_print(sh, "Display brightness PWM limits: min=%u, max=%u.",
+                (unsigned int)min, (unsigned int)max);
+    return 0;
+}
+
+static int cmd_display_brightness_set(const struct shell *sh, size_t argc,
+                                     char **argv)
+{
+    if (argc != 3U) {
+        shell_error(sh, "Usage: display brightness set <min> <max>.");
         return -EINVAL;
     }
 
@@ -813,14 +840,32 @@ static int cmd_display_brightness(const struct shell *sh, size_t argc,
 }
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
+    display_color_commands,
+    SHELL_CMD(get, NULL, "Get the display color", cmd_display_color_get),
+    SHELL_CMD_ARG(set, NULL, "Set the display color", cmd_display_color_set,
+                  1, 1),
+    SHELL_CMD(list, NULL, "List available display colors",
+              cmd_display_color_list),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    display_brightness_commands,
+    SHELL_CMD(get, NULL, "Get brightness limits",
+              cmd_display_brightness_get),
+    SHELL_CMD_ARG(set, NULL, "Set minimum and maximum brightness (0-255)",
+                  cmd_display_brightness_set, 2, 2),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
-    SHELL_CMD(test, NULL, "Run LED test", cmd_led_test),
+    SHELL_CMD(pixels, NULL, "Test each LED pixel individually",
+              cmd_display_pixels),
     SHELL_CMD(words, NULL, "Display each word individually", cmd_word_test),
-    SHELL_CMD_ARG(color, NULL, "Show or set the global display color",
-                  cmd_display_color, 0, 1),
-    SHELL_CMD_ARG(brightness, NULL,
-                  "Show or set the minimum and maximum PWM brightness (0-255)",
-                  cmd_display_brightness, 0, 2),
+    SHELL_CMD(color, &display_color_commands, "Get or set display color", NULL),
+    SHELL_CMD(brightness, &display_brightness_commands,
+              "Get or set brightness limits", NULL),
     SHELL_SUBCMD_SET_END
 );
 

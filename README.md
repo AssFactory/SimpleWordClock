@@ -23,12 +23,16 @@ the serial shell. Values range from 0 to 255, and the settings are saved across
 reboots:
 
 ```text
-display brightness
-display brightness 50 200
+display brightness get
+display brightness set 50 200
+display color get
+display color list
+display color set cyan
+display pixels
 ```
 
-The first command displays the current limits; the second sets the minimum and
-maximum PWM values.
+Use `get` to read a setting and `set` to change it. Brightness values range
+from 0 to 255.
 
 ### Time zone and daylight saving
 
@@ -37,12 +41,12 @@ selected from a fixed list and, by default, the European daylight-saving
 schedule. Both settings are saved across reboots:
 
 ```text
-time zones
-time zone
-time zone UTC+01:00
-time dst
-time dst off
-time dst on
+time zone list
+time zone get
+time zone set UTC+01:00
+time dst get
+time dst set off
+time dst set on
 ```
 
 The first command lists the supported fixed UTC offsets. Select the zone's
@@ -54,6 +58,7 @@ applied immediately to the existing UTC clock. Use this command only if the
 RTC itself needs correction; enter the local time for the configured zone:
 
 ```text
+time get
 time set YYYY-MM-DD HH:MM
 ```
 

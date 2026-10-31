@@ -475,7 +475,7 @@
     <h3>1. Sicherheit und Stromversorgung</h3>
     <p>Bei Wärme, Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Sicherung ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
     <h3>2. LEDs einzeln prüfen</h3>
-    <div class="cmd">display test<span>Testet alle LEDs nacheinander; jede leuchtet kurz auf. Der Test dauert etwa eine halbe Minute und stellt danach die Uhranzeige wieder her.</span></div>
+    <div class="cmd">display pixels<span>Testet alle LEDs nacheinander; jede leuchtet kurz auf. Der Test dauert etwa eine halbe Minute und stellt danach die Uhranzeige wieder her.</span></div>
     <p>Bei einzelnen Ausfällen LED, Verbindung oder Versorgung prüfen lassen. Bleiben alle dunkel, Versorgung und Sicherung fachkundig prüfen lassen.</p>
     <h3>3. Wörter und Zifferblatt prüfen</h3>
     <div class="cmd">display words<span>Zeigt jedes Wort einzeln für eine Sekunde in Weiß und danach wieder die Uhrzeit an.</span></div>
@@ -483,9 +483,9 @@
     <h3>4. Helligkeit und Farbe prüfen</h3>
     <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
     <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. Die PWM-Grenzen wie auf Seite 6 beschrieben prüfen.</p>
-    <div class="cmd">display brightness</div>
+    <div class="cmd">display brightness get</div>
     <p>Falsche Farbe? Die aktive Farbe wie auf Seite 6 beschrieben abfragen.</p>
-    <div class="cmd">display color</div>
+    <div class="cmd">display color get<br>display color list</div>
     <h3>5. Uhrzeit und Shell prüfen</h3>
     <p>Uhrzeit prüfen und bei Bedarf neu setzen (Seite 5). Geht sie nach dem Trennen der Versorgung verloren, Pufferbatterie prüfen lassen. Ohne Shell-Prompt Datenkabel, COM-Port sowie Terminaleinstellungen prüfen: 115200 Baud, 8 Datenbits, keine Parität, 1 Stoppbit, keine Flusssteuerung.</p>
     <div class="cmd">time get<br>time set YYYY-MM-DD HH:MM</div>
@@ -508,9 +508,9 @@
     <p>Standardmäßig gilt UTC+01:00 mit automatischer europäischer Sommerzeit. Intern speichert die Uhr UTC.</p>
     <h3>Zeitzone auswählen</h3>
     <p>Nur feste, unterstützte UTC-Offsets sind wählbar. Für Deutschland UTC+01:00 als Normalzeit verwenden.</p>
-    <div class="cmd">time zones<br>time zone UTC+01:00<span>Der erste Befehl listet alle verfügbaren Offsets auf. Der zweite wählt den gewünschten festen Offset; die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
+    <div class="cmd">time zone list<br>time zone get<br>time zone set UTC+01:00<span>Alle festen Offsets auflisten, die aktuelle Zone anzeigen oder eine Zone auswählen. Die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
     <h3>Sommerzeit einstellen</h3>
-    <div class="cmd">time dst<br>time dst off<br>time dst on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
+    <div class="cmd">time dst get<br>time dst set off<br>time dst set on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
     <p class="small">EU-Umstellung: letzter Sonntag im März und Oktober um 01:00 UTC. Für andere Regionen ausschalten. Die Frühlingslücke wird abgewiesen, bei der doppelten Herbststunde gilt Sommerzeit. Änderungen wirken sofort. Bei Zeitverlust Pufferbatterie prüfen lassen.</p>
     <div class="footer"><span>Erste Inbetriebnahme</span><span>05</span></div>
   </article>
@@ -524,10 +524,10 @@
     <h3>Automatische Helligkeit</h3>
     <p>Der Lichtsensor misst etwa alle fünf Sekunden. Zwischen 0 und 1500 lx wird die LED-Helligkeit automatisch zwischen den eingestellten PWM-Grenzen angepasst. Bei hoher LED-Last kann der Stromschutz zusätzlich dimmen.</p>
     <h3>Helligkeitsgrenzen anzeigen oder ändern</h3>
-    <div class="cmd">display brightness<br>display brightness 50 200<span>Ohne Werte werden die aktuellen Grenzen angezeigt. Mit zwei Werten werden Minimum und Maximum gesetzt. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 50 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
+    <div class="cmd">display brightness get<br>display brightness set 50 200<span>Mit get die aktuellen Grenzen anzeigen; mit set Minimum und Maximum festlegen. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 50 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
     <p>Ein höherer Minimalwert hält die Anzeige auch bei Dunkelheit heller; ein niedrigerer Maximalwert begrenzt die Helligkeit am Tag. <strong>0</strong> kann die LEDs vollständig ausschalten.</p>
     <h3>Anzeigefarbe wählen</h3>
-    <div class="cmd">display color<br>display color cyan<span>Ohne Farbname wird die aktuelle Farbe angezeigt. Mit einem Namen wird die Farbe sofort eingestellt und gespeichert.</span></div>
+    <div class="cmd">display color get<br>display color list<br>display color set cyan<span>Mit get die aktuelle Farbe anzeigen, mit list alle verfügbaren Farben auflisten und mit set eine Farbe wählen. Die Änderung wird sofort angewendet und gespeichert.</span></div>
     <ul class="color-options" aria-label="Verfügbare Anzeigefarben">
       <li><span class="color-swatch swatch-white" aria-hidden="true"></span>white</li>
       <li><span class="color-swatch swatch-red" aria-hidden="true"></span>red</li>
