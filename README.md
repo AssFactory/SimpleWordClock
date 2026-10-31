@@ -36,10 +36,15 @@ The current build uses an Adafruit ItsyBitsy RP2040, a WS2812B LED strip, a DS32
 
 ## Getting started
 
-Set up the [Zephyr development environment](https://docs.zephyrproject.org/latest/develop/getting_started/index.html), clone this repository, then build for the supported board:
+Set up the [Zephyr development environment](https://docs.zephyrproject.org/latest/develop/getting_started/index.html), then create a workspace using this repository as the West manifest:
 
 ```sh
-west build -b adafruit_itsybitsy_rp2040
+mkdir word-clock-workspace
+cd word-clock-workspace
+git clone https://github.com/AssFactory/SimpleWordClock.git
+west init -l SimpleWordClock
+west update
+west build -s SimpleWordClock -b adafruit_itsybitsy_rp2040
 ```
 
 For firmware releases, see the [GitHub Releases](../../releases).

@@ -15,6 +15,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          path: SimpleWordClock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Synchronize firmware version with tag
         env:
@@ -31,7 +38,7 @@ jobs:
               raise SystemExit(f"Release tag must use vMAJOR.MINOR.PATCH format: {tag}")
 
           major, minor, patch = match.groups()
-          Path("VERSION").write_text(
+          Path("SimpleWordClock/VERSION").write_text(
               f"VERSION_MAJOR = {major}\n"
               f"VERSION_MINOR = {minor}\n"
               f"PATCHLEVEL = {patch}\n"
@@ -41,24 +48,23 @@ jobs:
           )
           PY
 
-      - name: Set up West workspace and build firmware
-        run: |
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --volume "$GITHUB_WORKSPACE/..:/workspace" \
-            --workdir /workspace \
-            --env HOME=/tmp \
-            --entrypoint /bin/sh \
-            ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.4 \
-            -c 'west init -l SimpleWordClock && west update && west build -s SimpleWordClock -d SimpleWordClock/build -b adafruit_itsybitsy_rp2040 -p always'
+      - name: Set up Zephyr workspace
+        uses: zephyrproject-rtos/action-zephyr-setup@be8136a8bba01580485d98b7ad2d32477c36a49a
+        with:
+          app-path: SimpleWordClock
+          toolchains: arm-zephyr-eabi
+
+      - name: Build firmware
+        working-directory: SimpleWordClock
+        run: west build -s . -d build -b adafruit_itsybitsy_rp2040 -p always
 
       - name: Verify firmware image
-        run: test -s build/zephyr/zephyr.uf2
+        run: test -s SimpleWordClock/build/zephyr/zephyr.uf2
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
           generate_release_notes: true
-          files: build/zephyr/zephyr.uf2
+          files: SimpleWordClock/build/zephyr/zephyr.uf2
           fail_on_unmatched_files: true
