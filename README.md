@@ -30,6 +30,33 @@ display brightness 50 200
 The first command displays the current limits; the second sets the minimum and
 maximum PWM values.
 
+### Time zone and daylight saving
+
+The RTC stores UTC. The displayed local time uses a configurable UTC offset
+selected from a fixed list and, by default, the European daylight-saving
+schedule. Both settings are saved across reboots:
+
+```text
+time zones
+time zone
+time zone UTC+01:00
+time dst
+time dst off
+time dst on
+```
+
+The first command lists the supported fixed UTC offsets. Select the zone's
+**standard-time** offset, not its summer-time
+offset. The automatic rule switches on the last Sunday in March and off on the
+last Sunday in October (at 01:00 UTC). It is intended for regions following
+the European rule; disable it for regions that do not. A changed setting is
+applied immediately to the existing UTC clock. Use this command only if the
+RTC itself needs correction; enter the local time for the configured zone:
+
+```text
+time set YYYY-MM-DD HH:MM
+```
+
 ---
 
 ## 🖨️ 3D Printed Parts & Enclosure
