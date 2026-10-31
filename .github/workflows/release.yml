@@ -58,13 +58,20 @@ jobs:
         working-directory: SimpleWordClock
         run: west build -s . -d build -b adafruit_itsybitsy_rp2040 -p always
 
+      - name: Prepare firmware release asset
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: cp SimpleWordClock/build/zephyr/zephyr.uf2 "SimpleWordClock-${RELEASE_TAG}.uf2"
+
       - name: Verify firmware image
-        run: test -s SimpleWordClock/build/zephyr/zephyr.uf2
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: test -s "SimpleWordClock-${RELEASE_TAG}.uf2"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
           generate_release_notes: true
-          files: SimpleWordClock/build/zephyr/zephyr.uf2
+          files: SimpleWordClock-${{ github.ref_name }}.uf2
           fail_on_unmatched_files: true
