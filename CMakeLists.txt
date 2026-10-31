@@ -7,6 +7,7 @@ project(wordclock)
 target_sources(app PRIVATE
     src/main.c
     src/timeprocess/timeprocess.c
+    src/timeprocess/time_frame.c
     src/ambiente/ambiente.c
     src/display/display.c
     src/word_map/word_map.c

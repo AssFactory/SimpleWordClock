@@ -58,6 +58,17 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+## Tests
+
+The firmware logic tests use Zephyr's ztest framework and run on the
+64-bit `native_sim` simulator. From the West workspace root, run:
+
+```sh
+west twister -T SimpleWordClock/tests/wordclock -p native_sim/native/64
+```
+
+GitHub Actions runs these tests on pushes and pull requests.
+
 ## Documentation
 
 - [User manual (PDF)](docs/SimpleWordClock-User-Manual-A4-Booklet-DE.pdf)

@@ -1,0 +1,33 @@
+name: Run firmware tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          path: SimpleWordClock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Zephyr workspace
+        uses: zephyrproject-rtos/action-zephyr-setup@be8136a8bba01580485d98b7ad2d32477c36a49a
+        with:
+          app-path: SimpleWordClock
+          toolchains: arm-zephyr-eabi
+
+      - name: Run tests
+        working-directory: SimpleWordClock
+        run: west twister -T tests/wordclock -p native_sim/native/64
