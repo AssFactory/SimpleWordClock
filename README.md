@@ -44,6 +44,15 @@ west build -b adafruit_itsybitsy_rp2040
 
 For firmware releases, see the [GitHub Releases](../../releases).
 
+To build and publish a release automatically, push a version tag such as
+`v1.0.0`. GitHub Actions copies the tag version into `VERSION`, builds the UF2
+firmware, and attaches it to the release:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## Documentation
 
 - [User manual (PDF)](docs/SimpleWordClock-User-Manual-A4-Booklet-DE.pdf)

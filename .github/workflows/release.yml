@@ -1,0 +1,63 @@
+name: Build and publish firmware
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Synchronize firmware version with tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          tag = os.environ["TAG"]
+          match = re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", tag)
+          if match is None:
+              raise SystemExit(f"Release tag must use vMAJOR.MINOR.PATCH format: {tag}")
+
+          major, minor, patch = match.groups()
+          Path("VERSION").write_text(
+              f"VERSION_MAJOR = {major}\n"
+              f"VERSION_MINOR = {minor}\n"
+              f"PATCHLEVEL = {patch}\n"
+              "VERSION_TWEAK = 0\n"
+              "EXTRAVERSION =\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Set up West workspace and build firmware
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            --env HOME=/tmp \
+            ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.4 \
+            sh -c 'west init -l . && west update && west build -b adafruit_itsybitsy_rp2040 -p always'
+
+      - name: Verify firmware image
+        run: test -s build/zephyr/zephyr.uf2
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: build/zephyr/zephyr.uf2
+          fail_on_unmatched_files: true
