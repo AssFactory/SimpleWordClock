@@ -10,22 +10,23 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: SimpleWordClock
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Synchronize firmware version with tag
         env:
           TAG: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import os
@@ -37,13 +38,17 @@ jobs:
           if match is None:
               raise SystemExit(f"Release tag must use vMAJOR.MINOR.PATCH format: {tag}")
 
+          commit_sha = os.environ["COMMIT_SHA"]
+          if re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None:
+              raise SystemExit(f"Invalid commit SHA: {commit_sha}")
+
           major, minor, patch = match.groups()
           Path("SimpleWordClock/VERSION").write_text(
               f"VERSION_MAJOR = {major}\n"
               f"VERSION_MINOR = {minor}\n"
               f"PATCHLEVEL = {patch}\n"
               "VERSION_TWEAK = 0\n"
-              "EXTRAVERSION =\n",
+              f"EXTRAVERSION = g{commit_sha[:7]}\n",
               encoding="utf-8",
           )
           PY
@@ -69,7 +74,7 @@ jobs:
         run: test -s "SimpleWordClock-${RELEASE_TAG}.uf2"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ github.ref_name }}
           generate_release_notes: true

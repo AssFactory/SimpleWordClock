@@ -51,7 +51,9 @@ For firmware releases, see the [GitHub Releases](../../releases).
 
 To build and publish a release automatically, push a version tag such as
 `v1.0.0`. GitHub Actions copies the tag version into `VERSION`, builds the UF2
-firmware, and attaches it to the release:
+firmware, appends the tagged commit's short Git hash to the firmware version,
+and attaches it to the release. The installed version can be read with
+`app version` in the USB serial shell:
 
 ```sh
 git tag v1.0.0
