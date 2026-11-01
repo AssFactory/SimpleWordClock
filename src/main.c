@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include "timeprocess/timeprocess.h"
+#include "time_process/time_process.h"
 #include "ambiente/ambiente.h"
 #include "display/display.h"
 #include <zephyr/shell/shell.h>
@@ -12,25 +12,25 @@
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
-#define TIMEPROCESS_INTERVAL_MS  1000U
+#define TIME_PROCESS_INTERVAL_MS  1000U
 #define AMBIENTE_INTERVAL_MS     5000U
 
-#define TIMEPROCESS_STACK_SIZE   1024
+#define TIME_PROCESS_STACK_SIZE   1024
 #define AMBIENTE_STACK_SIZE      1024
 
 /* Thread priorities: lower number means higher priority */
-#define TIMEPROCESS_PRIORITY     6
+#define TIME_PROCESS_PRIORITY     6
 #define AMBIENTE_PRIORITY        6
 
-K_THREAD_STACK_DEFINE(timeprocess_stack, TIMEPROCESS_STACK_SIZE);
+K_THREAD_STACK_DEFINE(time_process_stack, TIME_PROCESS_STACK_SIZE);
 K_THREAD_STACK_DEFINE(ambiente_stack, AMBIENTE_STACK_SIZE);
 
-static struct k_thread timeprocess_thread_data;
+static struct k_thread time_process_thread_data;
 static struct k_thread ambiente_thread_data;
 
 /* Thread arguments must remain valid for the thread lifetime. */
-static const uint32_t timeprocess_interval_ms =
-    TIMEPROCESS_INTERVAL_MS;
+static const uint32_t time_process_interval_ms =
+    TIME_PROCESS_INTERVAL_MS;
 
 static const uint32_t ambiente_interval_ms =
     AMBIENTE_INTERVAL_MS;
@@ -61,14 +61,14 @@ int main(void)
     }
 
     k_tid_t tid = k_thread_create(
-        &timeprocess_thread_data,
-        timeprocess_stack,
-        K_THREAD_STACK_SIZEOF(timeprocess_stack),
-        timeprocess_thread,
-        (void *)&timeprocess_interval_ms,
+        &time_process_thread_data,
+        time_process_stack,
+        K_THREAD_STACK_SIZEOF(time_process_stack),
+        time_process_thread,
+        (void *)&time_process_interval_ms,
         NULL,
         NULL,
-        TIMEPROCESS_PRIORITY,
+        TIME_PROCESS_PRIORITY,
         0,
         K_NO_WAIT
     );
@@ -78,7 +78,7 @@ int main(void)
         return -EAGAIN;
     }
 
-    k_thread_start(&timeprocess_thread_data);
+    k_thread_start(&time_process_thread_data);
 
     tid = k_thread_create(
         &ambiente_thread_data,

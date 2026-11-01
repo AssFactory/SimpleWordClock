@@ -17,7 +17,7 @@
 
 #include "display.h"
 #include "../ambiente/ambiente.h"
-#include "../timeprocess/timeprocess.h"
+#include "../time_process/time_process.h"
 #include "../word_map/word_map.h"
 
 LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
@@ -590,7 +590,7 @@ static int cmd_display_pixels(const struct shell *sh, size_t argc,
         return ret;
     }
 
-    ret = timeprocess_refresh_display();
+    ret = time_process_refresh_display();
     if (ret < 0) {
         shell_error(sh, "Could not refresh the clock after the pixel test "
                     "(error %d).", ret);
@@ -680,7 +680,7 @@ static int cmd_word_test(const struct shell *sh, size_t argc, char **argv)
 
     k_mutex_unlock(&pixel_buffer_lock);
 
-    int refresh_ret = timeprocess_refresh_display();
+    int refresh_ret = time_process_refresh_display();
     if (refresh_ret < 0) {
         shell_error(sh, "Could not refresh the clock after the word test "
                     "(error %d).",

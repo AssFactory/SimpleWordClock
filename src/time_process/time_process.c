@@ -12,11 +12,11 @@
 
 #include <zephyr/sys/util.h>
 
-#include "timeprocess.h"
+#include "time_process.h"
 #include "time_frame.h"
 #include "../display/display.h"
 
-LOG_MODULE_REGISTER(timeprocess, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(time_process, LOG_LEVEL_INF);
 
 #define RTC_NODE DT_NODELABEL(rtc_ext)
 
@@ -73,7 +73,7 @@ static const struct time_zone_option time_zone_options[] = {
     { "UTC+14:00", 840 },
 };
 
-static const struct time_zone_option *timeprocess_find_zone_by_offset(
+static const struct time_zone_option *time_process_find_zone_by_offset(
     int16_t utc_offset_minutes)
 {
     for (size_t i = 0; i < ARRAY_SIZE(time_zone_options); i++) {
@@ -110,53 +110,53 @@ static bool cached_time_valid;
 #define TIME_SWEEP_FADE_OUT_FOURTH 176U
 #define TIME_SWEEP_FADE_OUT_FIFTH 232U
 
-static bool timeprocess_is_leap_year(int year)
+static bool time_process_is_leap_year(int year)
 {
     return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }
 
-static int timeprocess_days_in_month(int year, int month)
+static int time_process_days_in_month(int year, int month)
 {
     static const uint8_t days_per_month[] = {
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
     };
 
-    if (month == 1 && timeprocess_is_leap_year(year)) {
+    if (month == 1 && time_process_is_leap_year(year)) {
         return 29;
     }
 
     return days_per_month[month];
 }
 
-static uint32_t timeprocess_days_before_year(int year)
+static uint32_t time_process_days_before_year(int year)
 {
     uint32_t days = 0;
 
     for (int current_year = 2000; current_year < year; current_year++) {
-        days += timeprocess_is_leap_year(current_year) ? 366U : 365U;
+        days += time_process_is_leap_year(current_year) ? 366U : 365U;
     }
 
     return days;
 }
 
-static uint32_t timeprocess_days_before_month(int year, int month)
+static uint32_t time_process_days_before_month(int year, int month)
 {
     uint32_t days = 0;
 
     for (int current_month = 0; current_month < month; current_month++) {
-        days += (uint32_t)timeprocess_days_in_month(year, current_month);
+        days += (uint32_t)time_process_days_in_month(year, current_month);
     }
 
     return days;
 }
 
-static int timeprocess_validate_datetime(const struct rtc_time *time)
+static int time_process_validate_datetime(const struct rtc_time *time)
 {
     if (time == NULL ||
         time->tm_year + 1900 < 2000 || time->tm_year + 1900 > 2099 ||
         time->tm_mon < 0 || time->tm_mon > 11 ||
         time->tm_mday < 1 ||
-        time->tm_mday > timeprocess_days_in_month(time->tm_year + 1900,
+        time->tm_mday > time_process_days_in_month(time->tm_year + 1900,
                                                   time->tm_mon) ||
         time->tm_hour < 0 || time->tm_hour > 23 ||
         time->tm_min < 0 || time->tm_min > 59 ||
@@ -167,17 +167,17 @@ static int timeprocess_validate_datetime(const struct rtc_time *time)
     return 0;
 }
 
-static int timeprocess_datetime_to_seconds(const struct rtc_time *time,
+static int time_process_datetime_to_seconds(const struct rtc_time *time,
                                            uint64_t *seconds)
 {
-    int ret = timeprocess_validate_datetime(time);
+    int ret = time_process_validate_datetime(time);
     if (ret != 0 || seconds == NULL) {
         return -EINVAL;
     }
 
     int year = time->tm_year + 1900;
-    uint64_t days = timeprocess_days_before_year(year) +
-                    timeprocess_days_before_month(year, time->tm_mon) +
+    uint64_t days = time_process_days_before_year(year) +
+                    time_process_days_before_month(year, time->tm_mon) +
                     (uint64_t)(time->tm_mday - 1);
 
     *seconds = days * 86400U + (uint64_t)time->tm_hour * 3600U +
@@ -186,22 +186,22 @@ static int timeprocess_datetime_to_seconds(const struct rtc_time *time,
     return 0;
 }
 
-static void timeprocess_seconds_to_datetime(uint64_t seconds,
+static void time_process_seconds_to_datetime(uint64_t seconds,
                                             struct rtc_time *time)
 {
     uint32_t days = (uint32_t)(seconds / 86400U);
     uint32_t seconds_in_day = (uint32_t)(seconds % 86400U);
     int year = 2000;
 
-    while (days >= (timeprocess_is_leap_year(year) ? 366U : 365U)) {
-        days -= timeprocess_is_leap_year(year) ? 366U : 365U;
+    while (days >= (time_process_is_leap_year(year) ? 366U : 365U)) {
+        days -= time_process_is_leap_year(year) ? 366U : 365U;
         year++;
     }
 
     int yday = (int)days;
     int month = 0;
-    while (days >= (uint32_t)timeprocess_days_in_month(year, month)) {
-        days -= (uint32_t)timeprocess_days_in_month(year, month);
+    while (days >= (uint32_t)time_process_days_in_month(year, month)) {
+        days -= (uint32_t)time_process_days_in_month(year, month);
         month++;
     }
 
@@ -217,12 +217,12 @@ static void timeprocess_seconds_to_datetime(uint64_t seconds,
     time->tm_nsec = 0;
 }
 
-static uint64_t timeprocess_dst_transition_utc(int year, int month)
+static uint64_t time_process_dst_transition_utc(int year, int month)
 {
     uint32_t days_before_month =
-        timeprocess_days_before_year(year) +
-        timeprocess_days_before_month(year, month);
-    int days_in_month = timeprocess_days_in_month(year, month);
+        time_process_days_before_year(year) +
+        time_process_days_before_month(year, month);
+    int days_in_month = time_process_days_in_month(year, month);
     int weekday_of_last_day =
         (int)(((uint64_t)days_before_month + (uint64_t)days_in_month - 1U +
                6U) % 7U);
@@ -233,7 +233,7 @@ static uint64_t timeprocess_dst_transition_utc(int year, int month)
            3600U;
 }
 
-static bool timeprocess_is_summer_time_utc(const struct rtc_time *utc_time,
+static bool time_process_is_summer_time_utc(const struct rtc_time *utc_time,
                                            uint64_t utc_seconds,
                                            bool dst_enabled)
 {
@@ -242,13 +242,13 @@ static bool timeprocess_is_summer_time_utc(const struct rtc_time *utc_time,
     }
 
     int year = utc_time->tm_year + 1900;
-    uint64_t summer_time_start = timeprocess_dst_transition_utc(year, 2);
-    uint64_t summer_time_end = timeprocess_dst_transition_utc(year, 9);
+    uint64_t summer_time_start = time_process_dst_transition_utc(year, 2);
+    uint64_t summer_time_end = time_process_dst_transition_utc(year, 9);
 
     return utc_seconds >= summer_time_start && utc_seconds < summer_time_end;
 }
 
-static struct time_zone_config timeprocess_get_zone_config(void)
+static struct time_zone_config time_process_get_zone_config(void)
 {
     struct time_zone_config config;
 
@@ -259,7 +259,7 @@ static struct time_zone_config timeprocess_get_zone_config(void)
     return config;
 }
 
-static int timeprocess_settings_set(const char *name, size_t len,
+static int time_process_settings_set(const char *name, size_t len,
                                     settings_read_cb read_cb, void *cb_arg)
 {
     if (strcmp(name, "zone") == 0) {
@@ -275,7 +275,7 @@ static int timeprocess_settings_set(const char *name, size_t len,
             return bytes_read < 0 ? (int)bytes_read : -EIO;
         }
 
-        if (timeprocess_find_zone_by_offset(utc_offset_minutes) == NULL) {
+        if (time_process_find_zone_by_offset(utc_offset_minutes) == NULL) {
             LOG_WRN("Stored UTC offset %d is no longer supported; using UTC+01:00.",
                     utc_offset_minutes);
             return 0;
@@ -313,20 +313,20 @@ static int timeprocess_settings_set(const char *name, size_t len,
     return -ENOENT;
 }
 
-SETTINGS_STATIC_HANDLER_DEFINE(clock, "clock", NULL, timeprocess_settings_set,
+SETTINGS_STATIC_HANDLER_DEFINE(clock, "clock", NULL, time_process_settings_set,
                                NULL, NULL);
 
-static int timeprocess_local_to_utc(const struct rtc_time *local_time,
+static int time_process_local_to_utc(const struct rtc_time *local_time,
                                     struct rtc_time *utc_time,
                                     const struct time_zone_config *config)
 {
-    int ret = timeprocess_validate_datetime(local_time);
+    int ret = time_process_validate_datetime(local_time);
     if (ret != 0 || utc_time == NULL || config == NULL) {
         return -EINVAL;
     }
 
     uint64_t local_seconds;
-    ret = timeprocess_datetime_to_seconds(local_time, &local_seconds);
+    ret = time_process_datetime_to_seconds(local_time, &local_seconds);
     if (ret != 0) {
         return ret;
     }
@@ -351,12 +351,12 @@ static int timeprocess_local_to_utc(const struct rtc_time *local_time,
         }
 
         struct rtc_time candidate_utc;
-        timeprocess_seconds_to_datetime(utc_seconds, &candidate_utc);
+        time_process_seconds_to_datetime(utc_seconds, &candidate_utc);
         if (candidate_utc.tm_year + 1900 > 2099) {
             continue;
         }
 
-        bool is_dst = timeprocess_is_summer_time_utc(
+        bool is_dst = time_process_is_summer_time_utc(
             &candidate_utc, utc_seconds, config->dst_enabled);
         if (is_dst == candidate_is_dst) {
             *utc_time = candidate_utc;
@@ -367,7 +367,7 @@ static int timeprocess_local_to_utc(const struct rtc_time *local_time,
     return -EINVAL;
 }
 
-static void timeprocess_cache_update(const struct rtc_time *time)
+static void time_process_cache_update(const struct rtc_time *time)
 {
     k_mutex_lock(&time_cache_mutex, K_FOREVER);
     cached_time = *time;
@@ -375,7 +375,7 @@ static void timeprocess_cache_update(const struct rtc_time *time)
     k_mutex_unlock(&time_cache_mutex);
 }
 
-int timeprocess_get_time(struct rtc_time *time)
+int time_process_get_time(struct rtc_time *time)
 {
     if (time == NULL) {
         return -EINVAL;
@@ -394,7 +394,7 @@ int timeprocess_get_time(struct rtc_time *time)
     return 0;
 }
 
-static int timeprocess_read_rtc(void)
+static int time_process_read_rtc(void)
 {
     struct rtc_time utc_time;
     int ret = rtc_get_time(rtc_dev, &utc_time);
@@ -407,11 +407,11 @@ static int timeprocess_read_rtc(void)
         }
 
         uint64_t utc_seconds;
-        ret = timeprocess_datetime_to_seconds(&utc_time, &utc_seconds);
+        ret = time_process_datetime_to_seconds(&utc_time, &utc_seconds);
         if (ret == 0) {
             struct time_zone_config config =
-                timeprocess_get_zone_config();
-            bool summer_time = timeprocess_is_summer_time_utc(
+                time_process_get_zone_config();
+            bool summer_time = time_process_is_summer_time_utc(
                 &utc_time, utc_seconds, config.dst_enabled);
             struct rtc_time local_time;
             int32_t offset_seconds =
@@ -428,19 +428,19 @@ static int timeprocess_read_rtc(void)
                 utc_seconds -= offset;
             }
 
-            timeprocess_seconds_to_datetime(utc_seconds, &local_time);
+            time_process_seconds_to_datetime(utc_seconds, &local_time);
             if (local_time.tm_year + 1900 > 2099) {
                 return -EINVAL;
             }
             local_time.tm_isdst = summer_time ? 1 : 0;
-            timeprocess_cache_update(&local_time);
+            time_process_cache_update(&local_time);
         }
     }
 
     return ret;
 }
 
-int timeprocess_set_time(const struct rtc_time *time)
+int time_process_set_time(const struct rtc_time *time)
 {
     if (time == NULL) {
         return -EINVAL;
@@ -451,8 +451,8 @@ int timeprocess_set_time(const struct rtc_time *time)
     }
 
     struct rtc_time utc_time;
-    struct time_zone_config config = timeprocess_get_zone_config();
-    int ret = timeprocess_local_to_utc(time, &utc_time, &config);
+    struct time_zone_config config = time_process_get_zone_config();
+    int ret = time_process_local_to_utc(time, &utc_time, &config);
     if (ret != 0) {
         return ret;
     }
@@ -467,7 +467,7 @@ int timeprocess_set_time(const struct rtc_time *time)
 
     if (ret == 0) {
         /* Refresh the cache immediately instead of waiting for the next thread cycle. */
-        ret = timeprocess_read_rtc();
+        ret = time_process_read_rtc();
     }
 
     return ret;
@@ -480,14 +480,14 @@ static int cmd_rtc_get(const struct shell *sh, size_t argc, char **argv)
     ARG_UNUSED(argv);
 
     struct rtc_time time;
-    int ret = timeprocess_read_rtc();
+    int ret = time_process_read_rtc();
 
     if (ret < 0) {
         shell_error(sh, "Could not read the RTC (error %d).", ret);
         return ret;
     }
 
-    ret = timeprocess_get_time(&time);
+    ret = time_process_get_time(&time);
     if (ret < 0) {
         shell_error(sh, "No valid time value is available.");
         return ret;
@@ -552,7 +552,7 @@ static int cmd_rtc_set(const struct shell *sh, size_t argc, char **argv)
         .tm_nsec = 0,
     };
 
-    int ret = timeprocess_set_time(&time);
+    int ret = time_process_set_time(&time);
 
     if (ret < 0) {
         shell_error(sh, "Could not set the local time (error %d).",
@@ -571,9 +571,9 @@ static int cmd_time_zone_get(const struct shell *sh, size_t argc, char **argv)
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    struct time_zone_config config = timeprocess_get_zone_config();
+    struct time_zone_config config = time_process_get_zone_config();
     const struct time_zone_option *zone =
-        timeprocess_find_zone_by_offset(config.utc_offset_minutes);
+        time_process_find_zone_by_offset(config.utc_offset_minutes);
     if (zone == NULL) {
         shell_error(sh, "The configured UTC offset is not supported.");
         return -EINVAL;
@@ -616,7 +616,7 @@ static int cmd_time_zone_set(const struct shell *sh, size_t argc, char **argv)
     k_mutex_unlock(&time_zone_mutex);
 
     shell_print(sh, "Time zone set to %s.", zone->name);
-    ret = timeprocess_refresh_display();
+    ret = time_process_refresh_display();
     if (ret < 0) {
         shell_error(sh, "Offset saved, but display refresh failed (error %d).",
                     ret);
@@ -643,7 +643,7 @@ static int cmd_time_dst_get(const struct shell *sh, size_t argc, char **argv)
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
-    struct time_zone_config config = timeprocess_get_zone_config();
+    struct time_zone_config config = time_process_get_zone_config();
     shell_print(sh, "EU daylight saving is %s.",
                 config.dst_enabled ? "on" : "off");
     return 0;
@@ -672,7 +672,7 @@ static int cmd_time_dst_set(const struct shell *sh, size_t argc, char **argv)
 
     shell_print(sh, "EU daylight saving set to %s.",
                 dst_enabled != 0U ? "on" : "off");
-    ret = timeprocess_refresh_display();
+    ret = time_process_refresh_display();
     if (ret < 0) {
         shell_error(sh, "DST setting saved, but display refresh failed (error %d).",
                     ret);
@@ -710,7 +710,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 
 SHELL_CMD_REGISTER(time, &rtc_commands, "Date and time controls", NULL);
 
-static uint8_t timeprocess_sweep_level(
+static uint8_t time_process_sweep_level(
     uint8_t old_frame[TIME_FRAME_HEIGHT][TIME_FRAME_WIDTH],
     uint8_t new_frame[TIME_FRAME_HEIGHT][TIME_FRAME_WIDTH],
     uint8_t x, uint8_t y, int sweep_x)
@@ -771,7 +771,7 @@ static uint8_t timeprocess_sweep_level(
     return 0U;
 }
 
-static int timeprocess_render_time(int hour, uint8_t slot, bool animate,
+static int time_process_render_time(int hour, uint8_t slot, bool animate,
                                    int previous_hour, uint8_t previous_slot)
 {
     uint8_t old_frame[TIME_FRAME_HEIGHT][TIME_FRAME_WIDTH];
@@ -794,11 +794,11 @@ static int timeprocess_render_time(int hour, uint8_t slot, bool animate,
             for (uint8_t y = 0; y < TIME_FRAME_HEIGHT; y++) {
                 for (uint8_t x = 0; x < TIME_FRAME_WIDTH; x++) {
                     uint8_t level =
-                        timeprocess_sweep_level(old_frame, new_frame,
+                        time_process_sweep_level(old_frame, new_frame,
                                                 x, y, sweep_x);
                     if ((sweep_step % 2) != 0) {
                         uint8_t next_level =
-                            timeprocess_sweep_level(old_frame, new_frame,
+                            time_process_sweep_level(old_frame, new_frame,
                                                     x, y, sweep_x + 1);
                         level = (uint8_t)(((uint16_t)level + next_level) / 2U);
                     }
@@ -839,15 +839,15 @@ static int timeprocess_render_time(int hour, uint8_t slot, bool animate,
     return 0;
 }
 
-int timeprocess_refresh_display(void)
+int time_process_refresh_display(void)
 {
     struct rtc_time time;
-    int ret = timeprocess_read_rtc();
+    int ret = time_process_read_rtc();
     if (ret != 0) {
         return ret;
     }
 
-    ret = timeprocess_get_time(&time);
+    ret = time_process_get_time(&time);
     if (ret != 0) {
         return ret;
     }
@@ -859,10 +859,10 @@ int timeprocess_refresh_display(void)
     }
 
     uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
-    return timeprocess_render_time(time.tm_hour, slot, false, 0, 0);
+    return time_process_render_time(time.tm_hour, slot, false, 0, 0);
 }
 
-void timeprocess_thread(void *arg1, void *arg2, void *arg3)
+void time_process_thread(void *arg1, void *arg2, void *arg3)
 {
     const uint32_t interval_ms = *(const uint32_t *)arg1;
     int last_hour = -1;
@@ -879,14 +879,14 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
     }
 
     while (true) {
-        int ret = timeprocess_read_rtc();
+        int ret = time_process_read_rtc();
 
         if (ret < 0) {
             LOG_WRN("Could not read the RTC (error %d).", ret);
         } else {
             struct rtc_time time;
 
-            ret = timeprocess_get_time(&time);
+            ret = time_process_get_time(&time);
             if (ret < 0) {
                 LOG_ERR("Could not read the time cache (error %d).", ret);
             } else if (time.tm_hour < 0 || time.tm_hour > 23 ||
@@ -898,7 +898,7 @@ void timeprocess_thread(void *arg1, void *arg2, void *arg3)
                 uint8_t slot = (uint8_t)((time.tm_min * 60 + time.tm_sec) / 150);
 
                 if (time.tm_hour != last_hour || slot != last_slot) {
-                    ret = timeprocess_render_time(time.tm_hour, slot,
+                    ret = time_process_render_time(time.tm_hour, slot,
                                                   last_hour >= 0, last_hour,
                                                   (uint8_t)last_slot);
                     if (ret < 0) {

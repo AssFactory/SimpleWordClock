@@ -10,6 +10,6 @@ target_include_directories(app PRIVATE
 
 target_sources(app PRIVATE
     src/main.c
-    ${CMAKE_CURRENT_LIST_DIR}/../../src/timeprocess/time_frame.c
+    ${CMAKE_CURRENT_LIST_DIR}/../../src/time_process/time_frame.c
     ${CMAKE_CURRENT_LIST_DIR}/../../src/word_map/word_map.c
 )

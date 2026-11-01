@@ -3,7 +3,7 @@
 
 #include <zephyr/ztest.h>
 
-#include "timeprocess/time_frame.h"
+#include "time_process/time_frame.h"
 #include "word_map/word_map.h"
 
 struct expected_word {
