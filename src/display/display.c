@@ -773,6 +773,22 @@ static int cmd_display_brightness_get(const struct shell *sh, size_t argc,
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
+    uint16_t lux = ambiente_get_lux();
+    uint8_t brightness = display_scale_brightness(lux);
+
+    shell_print(sh,
+                "Automatic display brightness: %u/255 at %u lx (before "
+                "current limiting).",
+                (unsigned int)brightness, (unsigned int)lux);
+    return 0;
+}
+
+static int cmd_display_brightness_limits_get(const struct shell *sh,
+                                             size_t argc, char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
     uint8_t min;
     uint8_t max;
     int ret = display_get_brightness_limits(&min, &max);
@@ -788,11 +804,11 @@ static int cmd_display_brightness_get(const struct shell *sh, size_t argc,
     return 0;
 }
 
-static int cmd_display_brightness_set(const struct shell *sh, size_t argc,
-                                     char **argv)
+static int cmd_display_brightness_limits_set(const struct shell *sh,
+                                             size_t argc, char **argv)
 {
     if (argc != 3U) {
-        shell_error(sh, "Usage: display brightness set <min> <max>.");
+        shell_error(sh, "Usage: display brightness limits set <min> <max>.");
         return -EINVAL;
     }
 
@@ -850,11 +866,20 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 );
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
-    display_brightness_commands,
+    display_brightness_limits_commands,
     SHELL_CMD(get, NULL, "Get brightness limits",
-              cmd_display_brightness_get),
+              cmd_display_brightness_limits_get),
     SHELL_CMD_ARG(set, NULL, "Set minimum and maximum brightness (0-255)",
-                  cmd_display_brightness_set, 2, 2),
+                  cmd_display_brightness_limits_set, 2, 2),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    display_brightness_commands,
+    SHELL_CMD(get, NULL, "Get current automatic brightness",
+              cmd_display_brightness_get),
+    SHELL_CMD(limits, &display_brightness_limits_commands,
+              "Get or set brightness limits", NULL),
     SHELL_SUBCMD_SET_END
 );
 
@@ -865,7 +890,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
     SHELL_CMD(words, NULL, "Display each word individually", cmd_word_test),
     SHELL_CMD(color, &display_color_commands, "Get or set display color", NULL),
     SHELL_CMD(brightness, &display_brightness_commands,
-              "Get or set brightness limits", NULL),
+              "Get automatic brightness or configure its limits", NULL),
     SHELL_SUBCMD_SET_END
 );
 
