@@ -35,7 +35,9 @@ LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 #define LED_STRIP_MIN_BRIGHTNESS 5
 #define LED_STRIP_MAX_BRIGHTNESS 200
 
-#define LED_STRIP_MAX_CURRENT 2100
+#define SYSTEM_MAX_CURRENT 1800U
+#define OTHER_COMPONENTS_CURRENT 150U
+#define SYSTEM_VOLTAGE_MV 5000U
 #define LED_STRIP_IDLE_CURRENT 100
 #define LED_MAX_CURRENT_PER_CHANNEL 20
 
@@ -361,10 +363,25 @@ int display_set_brightness_limits(uint8_t min, uint8_t max)
     return 0;
 }
 
+static uint32_t display_estimate_current(const struct led_rgb *pixels,
+                                         uint8_t brightness)
+{
+    uint32_t total_pwm_ratio = 0;
+
+    for (size_t i = 0; i < LED_COUNT; i++) {
+        total_pwm_ratio += ((uint16_t)pixels[i].r * brightness) / 255U;
+        total_pwm_ratio += ((uint16_t)pixels[i].g * brightness) / 255U;
+        total_pwm_ratio += ((uint16_t)pixels[i].b * brightness) / 255U;
+    }
+
+    return OTHER_COMPONENTS_CURRENT + LED_STRIP_IDLE_CURRENT +
+           (uint32_t)(((uint64_t)total_pwm_ratio *
+                       LED_MAX_CURRENT_PER_CHANNEL) / 255U);
+}
+
 static int display_update(void)
 {
     static struct led_rgb output_pixels[LED_COUNT];
-    uint32_t total_pwm_ratio = 0;
     uint8_t brightness = display_scale_brightness(ambiente_get_lux());
     
     int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
@@ -376,21 +393,24 @@ static int display_update(void)
         output_pixels[i].r = ((uint16_t)pixel_buffer[i].r * brightness) / 255U;
         output_pixels[i].g = ((uint16_t)pixel_buffer[i].g * brightness) / 255U;
         output_pixels[i].b = ((uint16_t)pixel_buffer[i].b * brightness) / 255U;
-
-        total_pwm_ratio += output_pixels[i].r;
-        total_pwm_ratio += output_pixels[i].g;
-        total_pwm_ratio += output_pixels[i].b;
     }
 
-    uint32_t estimated_led_current = (uint32_t)(LED_STRIP_IDLE_CURRENT + ((uint64_t)total_pwm_ratio * LED_MAX_CURRENT_PER_CHANNEL) / 255U);
+    uint32_t estimated_total_current =
+        display_estimate_current(output_pixels, UINT8_MAX);
 
-    if (estimated_led_current > LED_STRIP_MAX_CURRENT) {
-        LOG_WRN("Estimated LED current (%u mA) exceeds the %u mA limit; "
+    if (estimated_total_current > SYSTEM_MAX_CURRENT) {
+        LOG_WRN("Estimated system current (%u mA) exceeds the %u mA limit; "
                 "reducing brightness.",
-                (unsigned int)estimated_led_current,
-                (unsigned int)LED_STRIP_MAX_CURRENT);
+                (unsigned int)estimated_total_current,
+                (unsigned int)SYSTEM_MAX_CURRENT);
 
-        uint8_t safety_factor = (uint8_t)(((uint64_t)(LED_STRIP_MAX_CURRENT - LED_STRIP_IDLE_CURRENT) * 255U) /(estimated_led_current - LED_STRIP_IDLE_CURRENT));
+        uint32_t idle_current =
+            OTHER_COMPONENTS_CURRENT + LED_STRIP_IDLE_CURRENT;
+        uint32_t max_led_channel_current =
+            SYSTEM_MAX_CURRENT - idle_current;
+        uint8_t safety_factor = (uint8_t)(
+            ((uint64_t)max_led_channel_current * 255U) /
+            (estimated_total_current - idle_current));
 
         for (size_t i = 0; i < LED_COUNT; i++) {
             output_pixels[i].r = ((uint16_t)output_pixels[i].r * safety_factor) / 255U;
@@ -783,6 +803,37 @@ static int cmd_display_brightness_get(const struct shell *sh, size_t argc,
     return 0;
 }
 
+static int cmd_display_current_get(const struct shell *sh, size_t argc,
+                                  char **argv)
+{
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    int ret = k_mutex_lock(&pixel_buffer_lock, K_FOREVER);
+    if (ret != 0) {
+        shell_error(sh, "Could not lock the pixel buffer (error %d).", ret);
+        return ret;
+    }
+
+    uint8_t brightness = display_scale_brightness(ambiente_get_lux());
+    uint32_t estimated_total_current =
+        display_estimate_current(pixel_buffer, brightness);
+    k_mutex_unlock(&pixel_buffer_lock);
+
+    uint32_t estimated_power_mw =
+        (uint32_t)(((uint64_t)estimated_total_current *
+                    SYSTEM_VOLTAGE_MV) / 1000U);
+    shell_print(sh,
+                "Estimated total current before LED current limiting: %u mA, "
+                "power=%u.%03u W at %u V; limit=%u mA.",
+                (unsigned int)estimated_total_current,
+                (unsigned int)(estimated_power_mw / 1000U),
+                (unsigned int)(estimated_power_mw % 1000U),
+                (unsigned int)(SYSTEM_VOLTAGE_MV / 1000U),
+                (unsigned int)SYSTEM_MAX_CURRENT);
+    return 0;
+}
+
 static int cmd_display_brightness_limits_get(const struct shell *sh,
                                              size_t argc, char **argv)
 {
@@ -884,6 +935,13 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 );
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
+    display_current_commands,
+    SHELL_CMD(get, NULL, "Get estimated current consumption",
+              cmd_display_current_get),
+    SHELL_SUBCMD_SET_END
+);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
     display_commands,
     SHELL_CMD(pixels, NULL, "Test each LED pixel individually",
               cmd_display_pixels),
@@ -891,6 +949,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
     SHELL_CMD(color, &display_color_commands, "Get or set display color", NULL),
     SHELL_CMD(brightness, &display_brightness_commands,
               "Get automatic brightness or configure its limits", NULL),
+    SHELL_CMD(current, &display_current_commands,
+              "Get estimated current consumption", NULL),
     SHELL_SUBCMD_SET_END
 );
 
