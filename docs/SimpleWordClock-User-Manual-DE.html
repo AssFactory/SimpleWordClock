@@ -85,6 +85,7 @@
   .box p:last-child { margin-bottom: 0; }
   .warning { border-left-color: #b4231c; background: #f9efee; }
   .note { border-left-color: #73818a; background: #f3f5f6; }
+  .polarity-mark { width: 15mm; height: 8mm; vertical-align: middle; }
   .signal-title { display: flex; align-items: center; gap: 2mm; color: #a51f19; }
   .warning-icon { flex: 0 0 auto; width: 5mm; height: 5mm; }
   .contact-line { height: 8mm; border-bottom: .3mm solid #aeb8bd; }
@@ -124,6 +125,7 @@
     align-items: start;
   }
   .shell-setup .steps li { margin-bottom: 1mm; }
+  .shell-setup .steps .between-steps { margin-left: -9mm; }
   .shell-setup .steps li.step-with-settings .terminal-settings {
     margin: 0;
     padding: 2mm 2.5mm;
@@ -408,7 +410,7 @@
     <h2>Wenn etwas nicht funktioniert</h2>
     <p class="small">Prüfen Sie die Punkte der Reihe nach. Für Befehle muss die serielle Shell verbunden sein (Seite 5).</p>
     <h3>Sicherheit und Stromversorgung</h3>
-    <p>Bei starker oder übermäßiger Wärme, ungewöhnlichem Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Feinsicherung (5 × 20 mm, 2,5 A, mittelträge) ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
+    <p>Bei starker oder übermäßiger Wärme, ungewöhnlichem Geruch oder Kabelschaden sofort ausschalten und Netzteil trennen. Sonst 5-V-Netzteil, Stecker und Kabel prüfen. Bleibt alles dunkel, kann die Feinsicherung (5 × 20 mm, 2 A, mittelträge) ausgelöst sein. Prüfung oder Wechsel nur spannungsfrei, fachkundig und mit gleichem Typ; niemals überbrücken.</p>
     <h3>Helligkeit und Farbe prüfen</h3>
     <div class="cmd">ambiente get<span>Zeigt den zuletzt gemessenen Umgebungslichtwert in Lux.</span></div>
     <p>Luxwert bei abgedecktem und freiem Sensor vergleichen; etwa fünf Sekunden bis zur nächsten Messung warten. Keine Änderung? Sensoröffnung freimachen und Sensor prüfen lassen. Die PWM-Grenzen wie auf Seite 7 beschrieben prüfen.</p>
@@ -477,7 +479,7 @@
     <ol class="steps">
       <li>Laden Sie die Firmwaredatei aus dem Bereich Releases des Projektarchivs herunter.</li>
       <li>Öffnen Sie die serielle Shell wie auf Seite 5 beschrieben und geben Sie den Befehl ein:
-        <div class="cmd">bootsel</div>
+        <div class="cmd">bootsel<span>Startet den Bootloader, damit Sie die UF2-Firmwaredatei übertragen können.</span></div>
       </li>
       <li>Der Computer zeigt das Laufwerk <strong>RPI-RP2</strong> an. Kopieren Sie die heruntergeladene UF2-Datei auf dieses Laufwerk.</li>
       <li>Warten Sie, bis der Kopiervorgang beendet ist und das Laufwerk verschwindet. Die Uhr startet anschließend mit der neuen Firmware neu.</li>
@@ -520,14 +522,21 @@
     <h2>Erste Inbetriebnahme</h2>
     <ol class="steps">
       <li>Uhr trocken und standsicher aufstellen oder mit der vorgesehenen Wandhalterung beziehungsweise über die M4-Montagelöcher befestigen; Sensoröffnung freihalten.</li>
-      <li>Netzteil und Verkabelung prüfen und die 5-V-Versorgung anschließen.
+      <li>Passendes Netzteil anschließen.
         <div class="box note">
-          <p><strong>Optional:</strong> Schritte 3–6 sind nur erforderlich, wenn Sie die Uhr über die serielle Shell konfigurieren oder die Firmware aktualisieren möchten. Für den normalen Betrieb genügen die Schritte 1 und 2. Vor jeder Konfigurationssitzung muss die Shell erneut verbunden werden.</p>
+          <p><strong>Netzteil:</strong> stabilisierte <strong>5 V Gleichspannung (DC, ⎓)</strong>, mindestens <strong>2 A</strong>, mit DC-Hohlstecker <strong>5,5 × 2,1 mm</strong>.</p>
+          <p><strong>Polarität:</strong> Innenkontakt (Mittelstift) Plus (+), Außenkontakt Minus (−). Nur ein Netzteil mit dieser Polarität verwenden.
+            <svg class="polarity-mark" viewBox="0 0 72 36" role="img" aria-label="Polarität: Plus am Innenkontakt, Minus am Außenkontakt">
+              <circle cx="36" cy="18" r="3" fill="currentColor"/>
+              <path d="M39 18h23M27 6C10 6 10 30 27 30M14 18H8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M66 14v8m-4-4h8M3 18h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </p>
         </div>
-        <p>Die Uhr stellt über USB eine einfache Text-Shell bereit. Ein Terminalprogramm am Computer zeigt diese Eingabeaufforderung an und überträgt Ihre Befehle. Es ist keine separate UART-Verkabelung und keine spezielle Uhren-App erforderlich. Die Shell überträgt keine Uhrzeit automatisch.</p>
+        <p class="between-steps"><strong>Hinweis: Optional:</strong> Schritte 3–6 benötigen Sie nur für Shell-Konfiguration oder Firmware-Updates. Für den normalen Betrieb genügen Schritte 1 und 2. Die Uhr stellt über USB eine einfache Text-Shell bereit. Ein Terminalprogramm am Computer, z. B. PuTTY oder Tera Term, zeigt die Eingabeaufforderung an und überträgt Ihre Befehle. Es ist keine separate UART-Verkabelung und keine spezielle Uhren-App erforderlich. Die Shell überträgt keine Uhrzeit automatisch.</p>
       </li>
       <li>Uhr mit einem USB-Datenkabel am Computer anschließen. Ein reines Ladekabel reicht nicht aus.</li>
-      <li>In PuTTY oder Tera Term als Verbindungstyp <strong>Serial</strong> auswählen. Unter Windows den COM-Port der Uhr im Geräte-Manager ermitteln. Unter macOS/Linux heißt der Port meist <code>/dev/ttyACM0</code> oder ähnlich.</li>
+      <li>Im Terminalprogramm als Verbindungstyp <strong>Serial</strong> auswählen. Unter Windows den COM-Port der Uhr im Geräte-Manager ermitteln. Unter macOS/Linux heißt der Port meist <code>/dev/ttyACM0</code> oder ähnlich.</li>
       <li class="step-with-settings"><span>Die Verbindungseinstellungen aus dem Kasten rechts übernehmen und die Verbindung öffnen.</span>
         <div class="box terminal-settings">
           <p><strong>Serielle Terminal-Einstellungen</strong></p>
@@ -540,9 +549,8 @@
       </li>
       <li>Einmal Enter drücken. Bei der Eingabeaufforderung <code>uart:~$</code> können Sie einen Befehl eingeben und mit Enter absenden.</li>
     </ol>
-    <p>Mit <strong>help</strong> lassen Sie sich die verfügbaren Shell-Befehle anzeigen. Für Details zu einem Befehl hängen Sie <code>--help</code> an. Die Tab-Taste ergänzt Befehle und Unterbefehle oder zeigt passende Möglichkeiten an.</p>
+    <p>Mit <strong>help</strong> sehen Sie verfügbare Befehle. <code>--help</code> zeigt Details; Tab ergänzt Befehle.</p>
     <div class="cmd">help<br>time --help</div>
-    <p class="small">Die USB-Verbindung dient hier als Textkonsole: Sie zeigt die Shell und nimmt Befehle an. Sie ist weder eine automatische Zeitsynchronisierung noch eine allgemeine Dateiübertragung.</p>
     <div class="footer"><span>Erste Inbetriebnahme</span><span>05</span></div>
   </article>
 </section>
@@ -553,10 +561,10 @@
     <p class="kicker">04 · Datum und Uhrzeit</p>
     <h2>Datum und Uhrzeit</h2>
     <h3>Zeitzone auswählen</h3>
-    <p>Die Uhr verwendet feste, unterstützte UTC-Offsets. Standardmäßig ist MEZ (UTC+01:00) mit aktivierter automatischer Sommerzeit eingestellt.</p>
+    <p>Die Uhr verwendet feste, unterstützte UTC-Offsets. Standardmäßig ist MEZ (UTC+01:00) mit aktivierter automatischer Sommerzeitumstellung eingestellt. Ist DST eingeschaltet, wechselt die Uhr selbstständig zwischen Winter- und Sommerzeit; ein manuelles Umschalten alle sechs Monate ist nicht nötig.</p>
     <div class="cmd">time zone list<br>time zone get<br>time zone set UTC+01:00<span>Alle festen Offsets auflisten, die aktuelle Zone anzeigen oder eine Zone auswählen. Die Auswahl bleibt nach einem Neustart gespeichert.</span></div>
-    <h3>Sommerzeit einstellen</h3>
-    <div class="cmd">time dst get<br>time dst set off<br>time dst set on<span>Status anzeigen, automatische Umstellung ausschalten oder wieder einschalten. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
+    <h3>Automatische Sommerzeitumstellung</h3>
+    <div class="cmd">time dst get<br>time dst set off<br>time dst set on<span>Status anzeigen, die automatische Umstellung ausschalten oder wieder einschalten. Bei on wechselt die Uhr selbstständig nach den EU-Regeln zwischen Winter- und Sommerzeit. Die Einstellung bleibt nach einem Neustart gespeichert.</span></div>
     <p class="small">EU-Umstellung: letzter Sonntag im März und Oktober um 01:00 UTC. Für andere Regionen ausschalten. Die Frühlingslücke wird abgewiesen, bei der doppelten Herbststunde gilt Sommerzeit. Änderungen wirken sofort. Bei Zeitverlust Pufferbatterie prüfen lassen.</p>
     <h3>Datum und Uhrzeit einstellen</h3>
     <p>Zeit abfragen und bei Bedarf das aktuelle Datum sowie die Ortszeit eingeben.</p>
@@ -569,7 +577,7 @@
     <p class="kicker">05 · Anzeige einstellen</p>
     <h2>Helligkeit und Farbe</h2>
     <h3>Automatische Helligkeit</h3>
-    <p>Der Lichtsensor misst etwa alle fünf Sekunden. Zwischen 0 und 1500 lx wird die LED-Helligkeit automatisch zwischen den eingestellten PWM-Grenzen angepasst. Bei hoher LED-Last kann der Stromschutz zusätzlich dimmen.</p>
+    <p>Der Lichtsensor misst etwa alle fünf Sekunden. Zwischen 0 und 1500 lx wird die LED-Helligkeit automatisch zwischen den eingestellten PWM-Grenzen angepasst.</p>
     <h3>Aktuelle Helligkeit und Helligkeitsgrenzen</h3>
     <div class="cmd">display brightness get<span>Zeigt den aus dem zuletzt gemessenen Umgebungslicht und den PWM-Grenzen berechneten Wert (0–255). Eine zusätzliche Dimmung durch den Stromschutz ist darin nicht enthalten.</span><br>display brightness limits get<br>display brightness limits set 5 200<span>Mit limits get die aktuellen Grenzen anzeigen; mit limits set Minimum und Maximum festlegen. Zulässig: 0–255; Minimum darf Maximum nicht überschreiten. Standard: 5 und 200. Die Änderung wird sofort angewendet und gespeichert.</span></div>
     <p>Ein höherer Minimalwert hält die Anzeige auch bei Dunkelheit heller; ein niedrigerer Maximalwert begrenzt die Helligkeit am Tag. <strong>0</strong> kann die LEDs vollständig ausschalten.</p>
@@ -586,8 +594,9 @@
     </ul>
     <p class="small">Die Namen müssen genau wie oben eingegeben werden. Für die Funktionsprüfung bei Anzeigeproblemen siehe die systematische Fehlerhilfe auf Seite 10.</p>
     <div class="box note">
-      <p><strong>Hinweis zum Stromverbrauch:</strong> Je heller die Anzeige, desto höher der Stromverbrauch. Mischfarben wie Cyan, Magenta, Gelb und Weiß nutzen mehrere LED-Kanäle gleichzeitig und können bei gleicher Helligkeit mehr Strom benötigen als Rot, Grün oder Blau. Bei hoher LED-Last kann der Stromschutz die Anzeige dimmen.</p>
+      <p><strong>Hinweis zum Stromverbrauch:</strong> Je heller die Anzeige, desto höher der Stromverbrauch. Mischfarben wie Cyan, Magenta, Gelb und Weiß nutzen mehrere LED-Kanäle gleichzeitig und können bei gleicher Helligkeit mehr Strom benötigen als Rot, Grün oder Blau. Der Stromschutz begrenzt die Gesamtaufnahme auf 1800 mA; die Schätzung berücksichtigt zusätzlich 150 mA für übrige Komponenten.</p>
     </div>
+    <div class="cmd">display current get<span>Zeigt den geschätzten Gesamtstrom und die Leistung bei 5 V vor einer möglichen Dimmung durch den Stromschutz.</span></div>
     <div class="footer"><span>Helligkeit & Farbe</span><span>07</span></div>
   </article>
 </section>
