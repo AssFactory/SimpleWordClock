@@ -35,11 +35,11 @@ LOG_MODULE_REGISTER(display, LOG_LEVEL_INF);
 #define LED_STRIP_MIN_BRIGHTNESS 5
 #define LED_STRIP_MAX_BRIGHTNESS 200
 
-#define SYSTEM_MAX_CURRENT 1800U
-#define OTHER_COMPONENTS_CURRENT 150U
+#define SYSTEM_MAX_CURRENT 1700U
+#define SYSTEM_IDLE_CURRENT 100U
 #define SYSTEM_VOLTAGE_MV 5000U
-#define LED_STRIP_IDLE_CURRENT 100
-#define LED_MAX_CURRENT_PER_CHANNEL 20
+#define LED_CHANNEL_CURRENT_MA_X100 1200U
+#define CURRENT_ESTIMATE_SCALE 100U
 
 #define DISPLAY_WORKQ_STACK_SIZE 2048
 #define DISPLAY_WORKQ_PRIORITY   5
@@ -374,9 +374,13 @@ static uint32_t display_estimate_current(const struct led_rgb *pixels,
         total_pwm_ratio += ((uint16_t)pixels[i].b * brightness) / 255U;
     }
 
-    return OTHER_COMPONENTS_CURRENT + LED_STRIP_IDLE_CURRENT +
-           (uint32_t)(((uint64_t)total_pwm_ratio *
-                       LED_MAX_CURRENT_PER_CHANNEL) / 255U);
+    uint32_t led_current =
+        (uint32_t)(((uint64_t)total_pwm_ratio *
+                    LED_CHANNEL_CURRENT_MA_X100 +
+                    (255U * CURRENT_ESTIMATE_SCALE) / 2U) /
+                   (255U * CURRENT_ESTIMATE_SCALE));
+
+    return SYSTEM_IDLE_CURRENT + led_current;
 }
 
 static int display_update(void)
@@ -404,8 +408,7 @@ static int display_update(void)
                 (unsigned int)estimated_total_current,
                 (unsigned int)SYSTEM_MAX_CURRENT);
 
-        uint32_t idle_current =
-            OTHER_COMPONENTS_CURRENT + LED_STRIP_IDLE_CURRENT;
+        uint32_t idle_current = SYSTEM_IDLE_CURRENT;
         uint32_t max_led_channel_current =
             SYSTEM_MAX_CURRENT - idle_current;
         uint8_t safety_factor = (uint8_t)(
@@ -820,15 +823,18 @@ static int cmd_display_current_get(const struct shell *sh, size_t argc,
         display_estimate_current(pixel_buffer, brightness);
     k_mutex_unlock(&pixel_buffer_lock);
 
+    uint32_t display_current_ma =
+        ((estimated_total_current + 5U) / 10U) * 10U;
     uint32_t estimated_power_mw =
-        (uint32_t)(((uint64_t)estimated_total_current *
+        (uint32_t)(((uint64_t)display_current_ma *
                     SYSTEM_VOLTAGE_MV) / 1000U);
+    uint32_t display_power_tenths_w = (estimated_power_mw + 50U) / 100U;
     shell_print(sh,
-                "Estimated total current before LED current limiting: %u mA, "
-                "power=%u.%03u W at %u V; limit=%u mA.",
-                (unsigned int)estimated_total_current,
-                (unsigned int)(estimated_power_mw / 1000U),
-                (unsigned int)(estimated_power_mw % 1000U),
+                "Model-based current before LED current limiting: about %u mA, "
+                "power about %u.%u W at %u V; limit=%u mA.",
+                (unsigned int)display_current_ma,
+                (unsigned int)(display_power_tenths_w / 10U),
+                (unsigned int)(display_power_tenths_w % 10U),
                 (unsigned int)(SYSTEM_VOLTAGE_MV / 1000U),
                 (unsigned int)SYSTEM_MAX_CURRENT);
     return 0;
